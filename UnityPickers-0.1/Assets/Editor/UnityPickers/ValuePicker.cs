@@ -9,7 +9,7 @@ using UnityPickers.Utility;
 namespace Editor.UnityPickers
 {
 	// ReSharper disable StaticMemberInGenericType
-	public abstract class ValuePicker<T> : EditorWindow
+	public abstract class ValuePicker<T> : UnityEditor.EditorWindow
 	{
 		private static readonly Vector2 Size = new Vector2(200, 300);
 

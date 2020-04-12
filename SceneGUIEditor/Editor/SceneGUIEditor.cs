@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEditorInternal;
 
 public class SceneGUIEditor : UnityEditor.Editor
 {
@@ -40,6 +41,27 @@ public class SceneGUIEditor : UnityEditor.Editor
     static double start_right_click_time;
     #endregion
 
+    void OnEnable()
+    {
+        if (SelectingFile) return;
+        Enable();
+    }
+
+    protected virtual void Enable()
+    {
+
+    }
+
+    private void OnDisable()
+    {
+        if (SelectingFile) return;
+        Disable();
+    }
+
+    protected virtual void Disable()
+    {
+    }
+
     #region Check double click
     static bool CheckDoubleClick()
     {
@@ -64,6 +86,9 @@ public class SceneGUIEditor : UnityEditor.Editor
 
     public void OnSceneGUI()
     {
+        if (SelectingFile)
+            return;
+
         if (((Component)target).GetComponent<RectTransform>() == null)
             ((Component)target).gameObject.AddComponent<RectTransform>();
 
@@ -76,6 +101,15 @@ public class SceneGUIEditor : UnityEditor.Editor
         {
             sceneGUIEditorEnabled = !sceneGUIEditorEnabled;
             EditorUtility.SetDirty(target);
+            if (sceneGUIEditorEnabled)
+                this.OnEnable();
+            else
+                this.OnDisable();
+        }
+
+        if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.S) { // && (Event.current.command || Event.current.control)) {
+            EditorUtility.SetDirty(target);
+            this.OnDisable();
         }
 
         if (sceneGUIEditorEnabled)
@@ -108,8 +142,11 @@ public class SceneGUIEditor : UnityEditor.Editor
             if (dragging || draggingRight || leftReleased || rightReleased || keyPressed)
             {
                 EditorWindow view = EditorWindow.GetWindow<SceneView>();
-                EditorUtility.SetDirty(target);
-                view.Repaint();
+                if (InternalEditorUtility.isApplicationActive && view == EditorWindow.focusedWindow)
+                {
+                    EditorUtility.SetDirty(target);
+                    view.Repaint();
+                }
             }
 
             if (keyPressed && keyPressedCode == KeyCode.Delete)
@@ -134,4 +171,16 @@ public class SceneGUIEditor : UnityEditor.Editor
     {
 
     }
+    
+    protected bool SelectingFile { get
+        {
+            try
+            {
+                return AssetDatabase.Contains(Selection.activeObject);
+            } catch
+            {
+                return false;
+            }
+
+        } }
 }

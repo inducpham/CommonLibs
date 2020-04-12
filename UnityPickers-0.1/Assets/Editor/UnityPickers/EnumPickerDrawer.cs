@@ -6,7 +6,7 @@ using UnityPickers.Utility;
 
 namespace Editor.UnityPickers
 {
-	[CustomPropertyDrawer(typeof(Enum), true)]
+	[CustomPropertyDrawer(typeof(EnumPicker), true)]
 	public class EnumPickerDrawer : PropertyDrawer
 	{
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)

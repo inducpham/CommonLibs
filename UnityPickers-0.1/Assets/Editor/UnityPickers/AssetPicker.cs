@@ -13,7 +13,7 @@ using Object = UnityEngine.Object;
 
 namespace Editor.UnityPickers
 {
-	public class AssetPicker : EditorWindow
+	public class AssetPicker : UnityEditor.EditorWindow
 	{
 		public class HierarchyEntry : IComparable<HierarchyEntry>
 		{
@@ -102,18 +102,24 @@ namespace Editor.UnityPickers
 
 		[SerializeField]
 		private string typeFilter;
+        [SerializeField]
+        private bool prefabTypeFilter;
 
 		private Type AssetType
 		{
 			get { return assetType; }
 			set
 			{
-				assetType = value;
+                prefabTypeFilter = false;
+                assetType = value;
 				if (typeof(MonoBehaviour).IsAssignableFrom(assetType)
 					|| typeof(GameObject).IsAssignableFrom(assetType))
 				{
 					typeFilter = "Prefab";
-				}
+                    if (typeof(MonoBehaviour).IsAssignableFrom(assetType))
+                        prefabTypeFilter = true;
+
+                }
 				else if (typeof(Object).IsAssignableFrom(assetType))
 				{
 					typeFilter = assetType.Name;
@@ -509,7 +515,7 @@ namespace Editor.UnityPickers
 								UpdateAssetList();
 								focusNameFilter = true;
 							},
-							style: EditorStyles.popup,
+							style: UnityEditor.EditorStyles.popup,
 							options: GUILayout.Width(120)
 						);
 					}
@@ -1030,8 +1036,13 @@ namespace Editor.UnityPickers
 
 		private bool FitsFilters(HierarchyEntry he)
 		{
-			if (he.Children != null && he.Children.Count > 0)
-				return true;
+            if (he.Children != null && he.Children.Count > 0)
+            {
+                return true;
+            }
+
+            if (!FitsPrefab(he))
+                return false;
 			foreach (var filter in filters)
 			{
 				if (!filter(he))
@@ -1040,6 +1051,19 @@ namespace Editor.UnityPickers
 
 			return true;
 		}
+
+        private bool FitsPrefab(HierarchyEntry he)
+        {
+            if (!prefabTypeFilter) return true;
+
+            he.FindAsset();
+            if (he.Asset == null)
+                return false;
+            if (!he.Asset.GetType().IsAssignableFrom(typeof(GameObject)))
+                return false;
+
+            return ((GameObject)he.Asset).GetComponent(assetType) != null;
+        }
 
 		private void BuildFlatAssets(List<HierarchyEntry> entries)
 		{
