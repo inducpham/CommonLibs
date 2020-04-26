@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d711d76c3454b914597a69bb34deda49, type: 3}
+  m_Name: TextEditExample
+  m_EditorClassIdentifier: 
+  text:
+    name: Name of the field
+    appear: 0
+    sprite: {fileID: 21300000, guid: a98ab53693c6ebb46a93584984f8c39f, type: 3}
+    prefab: {fileID: 212664057370441866, guid: 0aa09cf2ac0d97642a8546e1e560ee80, type: 3}
+    mood: 1
+    content: content something sometyhing something something
+  text2:
+    name: Name of the field
+    appear: 0
+    sprite: {fileID: 21300000, guid: a98ab53693c6ebb46a93584984f8c39f, type: 3}
+    prefab: {fileID: 212664057370441866, guid: 0aa09cf2ac0d97642a8546e1e560ee80, type: 3}
+    mood: 1
+    content: content something sometyhing something something
