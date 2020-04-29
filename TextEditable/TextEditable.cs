@@ -334,6 +334,7 @@ namespace TextEditable
             bool pageup = Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.PageUp;
             bool pagedown = Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.PageDown;
             bool hinting = Event.current.type == EventType.KeyDown && Event.current.control && (Event.current.keyCode == KeyCode.Space);
+
             if (closing || scrolling || pageup || pagedown || hinting) UseCurrentKeyEvent();
 
             this.UpdateHintingInput();

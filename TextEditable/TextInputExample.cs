@@ -25,7 +25,6 @@ namespace TextEditable
         public string content;
     }
 
-    [CreateAssetMenu]
     public class TextInputExample : ScriptableObject
     {
         [TextEditable.PropertyEditable]

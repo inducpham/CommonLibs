@@ -20,8 +20,12 @@ namespace FuzzyFinder
 	{
         static FindPopupWindow instance = null;
 
-		[UnityEditor.MenuItem("Tools/Fuzzy file finder %`")]
-		public static void DoSomething()
+#if UNITY_EDITOR_WIN
+        [UnityEditor.MenuItem("Tools/Fuzzy file finder %`")]
+#elif UNITY_EDITOR_OSX
+        [UnityEditor.MenuItem("Tools/Fuzzy file finder ^`")]
+#endif
+        public static void DoSomething()
 		{
             //Folder.ShowFolderContents("Assets/QuickFindFiles");
 
