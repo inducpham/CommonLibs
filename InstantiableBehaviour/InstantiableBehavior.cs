@@ -27,7 +27,18 @@ public abstract class InstantiableBehaviour<T> : MonoBehaviour
         var results = new List<InstantiableBehaviour<T>>();
         foreach (var data in datas)
             results.Add(Instantiate(data));
+
+        this.gameObject.SetActive(false);
         return results;
+    }
+
+    public IEnumerable<InstantiableBehaviour<T>> Instances
+    {
+        get
+        {
+            foreach (var instance in instances)
+                yield return instance;
+        }
     }
 
     public InstantiableBehaviour<T> Instantiate(T data)
@@ -39,6 +50,8 @@ public abstract class InstantiableBehaviour<T> : MonoBehaviour
         instance.instanceIndex = instances.Count;
         instance.gameObject.SetActive(true);
         instance.OnInstantiated();
+
+        this.instances.Add(instance);
         return instance;
     }
 
