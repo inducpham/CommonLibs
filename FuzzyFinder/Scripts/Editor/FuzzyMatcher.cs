@@ -43,7 +43,7 @@ namespace FuzzyFinder {
 	    public static bool FuzzyMatch(string stringToSearch, string pattern, out int outScore)
 	    {
 		    // Score consts
-		    const int adjacencyBonus = 5;               // bonus for adjacent matches
+		    const int adjacencyBonus = 3;               // bonus for adjacent matches
 		    const int separatorBonus = 10;              // bonus if match occurs after a separator
 		    const int camelBonus = 10;                  // bonus if match is uppercase and prev is lower
 

@@ -1,18 +1,10 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
+using System.Collections;
+using System.Collections.Generic;
 
-namespace TextEditable
+namespace InstructionSetEditor
 {
-    public class PropertyEditable : PropertyAttribute { }
-    
-    [System.AttributeUsage(System.AttributeTargets.Field)]
-    public class HideDefault : System.Attribute { }
-
-    [System.AttributeUsage(System.AttributeTargets.Field)]
-    public class DefaultStringField : System.Attribute { }
-
     class Hint
     {
         public string value;
@@ -24,7 +16,7 @@ namespace TextEditable
     public class CustomTextEditorWindow : EditorWindow
     {
         static CustomTextEditorWindow instance = null;
-        System.Object target;
+        InstructionSet target;
         Rect basePosition, hintPosition, textPosition, statusPosition;
         bool hintEnabled = false;
         TextEditor textEditor = null;
@@ -60,7 +52,7 @@ namespace TextEditable
             if (r.yMax > screen_rect.yMax)
                 r.y -= (r.yMax - screen_rect.yMax - 20);
 
-            instance.target = (System.Object)prop.GetValue();
+            instance.target = (InstructionSet) prop.GetValue();
             instance.property = prop;
             instance.Enable();
             instance.ShowPopup();
@@ -83,16 +75,17 @@ namespace TextEditable
         {
             //LOAD FROM EDITING OBJECT
             this.editContent = target.DefaultToEditorContent(); // target.ToEditorContent();
-            this.fieldTypeNames = target.GetFieldTypeNames();
+            this.fieldTypeNames = target.GetFieldTypeNameMap();
             this.defaultStringField = target.DefaultStringField();
         }
 
         private void OnDisable()
         {
             //SAVE TO EDITING OBJECT
-            target.DefaultFromEditorContent(this.editContent);
-            // target.FromEditorContent(this.editContent);
-            CustomTextEditor.RemapSerializedPropertyContent(this.property);
+            foreach (InstructionSet target in this.property.GetValues())
+                target.DefaultFromEditorContent(this.editContent);
+
+            InstructionSetEditorPropertyDrawer.RemapSerializedPropertyContent(this.property);
         }
 
         void UseCurrentKeyEvent()
@@ -156,10 +149,12 @@ namespace TextEditable
             this.hintingValue = line.CanHintValue(cursor);
 
             hints.Clear();
-            if (this.hintingField) {
+            if (this.hintingField)
+            {
                 foreach (var field in this.fieldTypeNames.Keys)
                     hints.Add(new Hint() { value = field, content = this.fieldTypeNames[field] + " : " + field });
-            } else if (this.hintingValue)
+            }
+            else if (this.hintingValue)
             {
                 var hint_values = this.target.DefaultGetFieldValueHints(line.ExtractCurrentField());
                 if (hint_values != null)
@@ -222,7 +217,8 @@ namespace TextEditable
             {
                 //DISABLE HINTING
                 this.DisableHinting();
-            } else
+            }
+            else
             { //SETUP HINT SUGGESTION
                 this.hintStartCursor = hintStartCursor;
                 this.SetupHintSuggestion();
@@ -274,7 +270,8 @@ namespace TextEditable
             pos.height = 16;
 
             var i = 0;
-            foreach (var hint in this.hints) {
+            foreach (var hint in this.hints)
+            {
                 if (i >= max_hint_count) break;
                 if (hint.matched == false) continue;
                 GUI.Label(pos, hint.content, i == this.currentHintIndex ? styleHintSelected : styleHint);
@@ -384,90 +381,5 @@ namespace TextEditable
             this.editContent = textEditor.text;
         }
 
-    }
-
-    [CustomPropertyDrawer(typeof(PropertyEditable))]
-    public class CustomTextEditor : PropertyDrawer
-    {
-        static bool selectionChangedMapped = false;
-        static Dictionary<string, string> propertyContentMap = new Dictionary<string, string>();
-
-        static string defaultContent = "AttributeTextEditable target class must implements interface TextEditable";
-        static GUIStyle style;
-
-        static GUIStyle GetStyle()
-        {
-            if (style != null) return style;
-            style = new GUIStyle(EditorStyles.helpBox);
-            style.fontSize = 11;
-            style.richText = true;
-            style.padding = new RectOffset(6, 6, 6, 6);
-            style.normal.textColor = new Color(0.2f, 0.2f, 0.2f); // Color.black;
-            return style;
-        }
-
-        public static void RemapSerializedPropertyContent(SerializedProperty property)
-        {
-            var content = defaultContent;
-            var obj = property.GetValue();
-            if (obj == null) return;
-            content = obj.DefaultToEditorContent(); //.ToEditorContent();
-            propertyContentMap[property.propertyPath] = content;
-            property.serializedObject.ApplyModifiedProperties();
-
-            foreach (var o in property.serializedObject.targetObjects) EditorUtility.SetDirty(o);
-        }
-
-        static string MapSerializedPropertyContent(SerializedProperty property)
-        {
-            if (!selectionChangedMapped)
-            {
-                Selection.selectionChanged += () => propertyContentMap.Clear();
-                selectionChangedMapped = true;
-            }
-
-            if (propertyContentMap.ContainsKey(property.propertyPath) == false)
-            {
-                var content = defaultContent;
-
-                var obj = property.GetValue();
-                if (obj == null) return "";
-                content = obj.DefaultToEditorContent(); // .ToEditorContent();
-
-                propertyContentMap[property.propertyPath] = content;
-            }
-
-            return propertyContentMap[property.propertyPath];
-        }
-
-        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
-        {
-            return GetStyle().CalcHeight(new GUIContent(MapSerializedPropertyContent(property)), EditorGUIUtility.currentViewWidth) + EditorGUIUtility.singleLineHeight;
-        }
-
-        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
-        {
-            var content = MapSerializedPropertyContent(property);
-
-            var c = GUI.color;
-            GUI.color = Color.clear;
-            var show_editor = GUI.Button(position, "");
-            GUI.color = c;
-
-            var prop = property.FindPropertyRelative("content");
-            var labelPosition = position;
-            labelPosition.height = EditorGUIUtility.singleLineHeight;
-            position.height -= labelPosition.height;
-            position.y += labelPosition.height;
-            EditorGUI.LabelField(labelPosition, label);
-            EditorGUI.LabelField(position, content, GetStyle());
-
-            if (show_editor)
-            {
-                position.center = EditorGUIUtility.GUIToScreenPoint(position.center);
-                position.y -= 1;
-                CustomTextEditorWindow.Show(position, property);
-            }
-        }
     }
 }

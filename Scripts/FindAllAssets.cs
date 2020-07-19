@@ -19,8 +19,8 @@ public class FindAllAssets
         {
             var path = AssetDatabase.GUIDToAssetPath(uid);
             foreach (var obj in AssetDatabase.LoadAllAssetsAtPath(path))
-                if (typeof(T).IsAssignableFrom(obj.GetType()))
-                    results.Add((T) obj);
+                    if (typeof(T) != null && obj != null && typeof(T).IsAssignableFrom(obj.GetType()))
+                        results.Add((T) obj);
         }
         return results;
     }

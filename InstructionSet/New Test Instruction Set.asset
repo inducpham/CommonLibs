@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 867d548c5332acd439ecb6fdcb0eb40b, type: 3}
+  m_Name: New Test Instruction Set
+  m_EditorClassIdentifier: 
+  instructions:
+    instructions:
+    - type: mood
+      valueIndex: 0
+    - type: title
+      valueIndex: 0
+    - type: lines
+      valueIndex: 0
+    - type: title
+      valueIndex: 1
+    - type: lines
+      valueIndex: 1
+    - type: mood
+      valueIndex: 1
+    - type: mood
+      valueIndex: 2
+    - type: lines
+      valueIndex: 2
+    - type: lines
+      valueIndex: 3
+    - type: lines
+      valueIndex: 4
+    - type: lines
+      valueIndex: 5
+    - type: portrait
+      valueIndex: 0
+    - type: clear
+      valueIndex: 0
+    lines:
+    - hahaha
+    - something something
+    - 'Yandere time!
+
+      Even more yandere!'
+    - 'I mean there are more than just that right.
+
+      The smells of sulfur'
+    - 'Yandere time!
+
+      Even more yandere!'
+    - 'I mean there are more than just that right.
+
+      The smells of sulfur'
+    portrait:
+    - {fileID: 6985301475641269542, guid: 43672971724c1fc49afab6c7660e9c79, type: 3}
+    mood: 020000000200000005000000
+    title:
+    - heheh
+    - i mean
+    clear: 01
