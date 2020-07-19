@@ -16,6 +16,7 @@ using UnityEditor.Callbacks;
 public class ScriptableObjectBrowser : EditorWindow
 {
     static int BROWSE_AREA_WIDTH = 320;
+    static int ENTRY_LINE_HEIGHT = 22;
 
     private static LinkedList<ScriptableObject> EditorHistory = new LinkedList<ScriptableObject>();
     private static int EDITOR_HISTORY_MAX = 60;
@@ -310,7 +311,7 @@ public class ScriptableObjectBrowser : EditorWindow
 
 
         browse_scroll = GUILayout.BeginScrollView(browse_scroll, false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
-        var rect_entry = new Rect(0, 0, area.width, 20);
+        var rect_entry = new Rect(0, 0, area.width, ENTRY_LINE_HEIGHT);
         foreach (var asset in sorted_asset_list)
             RenderAssetEntry(asset, ref rect_entry);
         EditorGUILayout.EndScrollView();
@@ -333,7 +334,7 @@ public class ScriptableObjectBrowser : EditorWindow
             var current_selection_index = sorted_asset_list.IndexOf(currentSelectionEntry);
             var min_index = 0;
             var max_index = sorted_asset_list.Count - 1;
-            var page_index_count = Mathf.Max(1, Mathf.FloorToInt(scroll_rect.height / 20) - 1);
+            var page_index_count = Mathf.Max(1, Mathf.FloorToInt(scroll_rect.height / ENTRY_LINE_HEIGHT) - 1);
 
             if (Event.current.keyCode == KeyCode.UpArrow)
             {
@@ -383,11 +384,11 @@ public class ScriptableObjectBrowser : EditorWindow
                 SelectionSetAll();
 
             current_selection_index = sorted_asset_list.IndexOf(currentSelectionEntry);
-            var selection_y = current_selection_index * 20;
-            if (selection_y < browse_scroll.y) browse_scroll.y = Mathf.Max(0, selection_y - 10);
-            if (selection_y > browse_scroll.y + scroll_rect.height - 40)
+            var selection_y = current_selection_index * ENTRY_LINE_HEIGHT;
+            if (selection_y < browse_scroll.y) browse_scroll.y = Mathf.Max(0, selection_y - ENTRY_LINE_HEIGHT / 2);
+            if (selection_y > browse_scroll.y + scroll_rect.height - ENTRY_LINE_HEIGHT * 2)
             {
-                var max = 20 * sorted_asset_list.Count - scroll_rect.height + 14;
+                var max = ENTRY_LINE_HEIGHT * sorted_asset_list.Count - scroll_rect.height + 14;
                 browse_scroll.y = Mathf.Min(max, selection_y - scroll_rect.height + 50);
             }
         }
@@ -399,7 +400,7 @@ public class ScriptableObjectBrowser : EditorWindow
             var current_selection_index = sorted_asset_list.IndexOf(currentSelectionEntry);
             var min_index = 0;
             var max_index = sorted_asset_list.Count - 1;
-            var page_index_count = Mathf.Max(1, Mathf.FloorToInt(scroll_rect.height / 20) - 1);
+            var page_index_count = Mathf.Max(1, Mathf.FloorToInt(scroll_rect.height / ENTRY_LINE_HEIGHT) - 1);
 
             if (Event.current.keyCode == KeyCode.UpArrow)
             {
@@ -453,7 +454,7 @@ public class ScriptableObjectBrowser : EditorWindow
         EditorGUILayout.LabelField(content, EditorStyles.boldLabel, GUILayout.Width(EditorStyles.boldLabel.CalcSize(content).x));
         EditorGUILayout.LabelField(asset.path, EditorStyles.miniLabel);
         EditorGUILayout.EndHorizontal();
-        rect_entry.y += 20;
+        rect_entry.y += rect_entry.height;
 
         var r = GUILayoutUtility.GetLastRect();
         if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && r.Contains(Event.current.mousePosition))
