@@ -155,6 +155,7 @@ namespace InstructionSetEditor
                 }
             }
 
+            if (highlight) result += "\n";
             return result;
         }
 
