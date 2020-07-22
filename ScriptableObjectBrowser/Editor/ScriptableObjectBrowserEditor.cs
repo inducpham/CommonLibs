@@ -76,7 +76,7 @@ public abstract class ScritpableObjectBrowserEditor
     {
         string path = AssetDatabase.GetAssetPath(asset);
         if (string.IsNullOrEmpty(path)) return null;
-
+         
         var dir = new FileInfo(path).Directory.FullName;
         var i = dir.IndexOf("Assets");
         dir = dir.Substring(i);
@@ -117,7 +117,6 @@ public abstract class ScriptableObjectBrowserEditor<T> : ScritpableObjectBrowser
         if (this.cachedEditor != null) this.cachedEditor.ResetTarget();
     }
 
-    private bool draw_default_inspector = false;
     public override void RenderInspector()
     {
         if (targetObject == null) return;
