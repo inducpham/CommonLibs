@@ -157,6 +157,7 @@ namespace InstructionSetEditor
             else if (this.hintingValue)
             {
                 var hint_values = this.target.DefaultGetFieldValueHints(line.ExtractCurrentField());
+                hint_values.RemoveAll((hint) => hint.Contains("(Packages/com"));
                 if (hint_values != null)
                     foreach (var hint_value in hint_values)
                         hints.Add(new Hint() { value = hint_value, content = hint_value });
