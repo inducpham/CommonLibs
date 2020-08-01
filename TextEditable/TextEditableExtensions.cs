@@ -2,11 +2,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
 using System.Reflection;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Globalization;
+#if UNITY_EDITOR
+using UnityEditor;
 
 namespace TextEditable
 {
@@ -441,3 +442,4 @@ namespace TextEditable
         }
     }
 }
+#endif

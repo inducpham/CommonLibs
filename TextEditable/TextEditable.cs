@@ -1,7 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 
 namespace TextEditable
 {
@@ -21,6 +23,7 @@ namespace TextEditable
         public string content;
     }
 
+#if UNITY_EDITOR
     public class CustomTextEditorWindow : EditorWindow
     {
         static CustomTextEditorWindow instance = null;
@@ -470,4 +473,5 @@ namespace TextEditable
             }
         }
     }
+#endif
 }

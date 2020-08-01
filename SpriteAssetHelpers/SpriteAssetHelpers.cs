@@ -22,10 +22,13 @@ public static class SpriteAssetHelpers
         importer.textureType = TextureImporterType.Sprite;
         List<SpriteMetaData> sprites = new List<SpriteMetaData>();
         int index = 0;
+        int max_row = Mathf.CeilToInt(names.Count * 1.0f / columns) - 1;
         foreach (var name in names)
         {
             var col = index % columns;
             var row = index / columns;
+            row = max_row - row;
+
             sprites.Add(new SpriteMetaData()
             {
                 alignment = (int)SpriteAlignment.Center,
