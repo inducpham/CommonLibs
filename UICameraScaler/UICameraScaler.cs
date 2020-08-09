@@ -14,6 +14,11 @@ public class UICameraScaler : MonoBehaviour
         this.targetCamera = this.GetComponent<Camera>();
     }
 
+    private void Awake()
+    {
+        Update();
+    }
+
     // Update is called once per frame
     void Update()
     {
