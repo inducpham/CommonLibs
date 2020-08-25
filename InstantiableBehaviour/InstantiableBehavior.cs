@@ -5,6 +5,8 @@ using UnityEngine;
 public abstract class InstantiableBehaviour<T> : MonoBehaviour
 {
     protected T instanceData;
+    public T InstanceData => instanceData;
+
     protected int instanceIndex;
     private List<InstantiableBehaviour<T>> instances = new List<InstantiableBehaviour<T>>();
 
@@ -53,6 +55,16 @@ public abstract class InstantiableBehaviour<T> : MonoBehaviour
 
         this.instances.Add(instance);
         return instance;
+    }
+
+    public IEnumerable<V> IterateInstances<V>() where V: InstantiableBehaviour<T>
+    {
+        foreach (var instance in instances) yield return (V)instance;
+    }
+
+    public List<V> CreateInstancesList<V>() where V : InstantiableBehaviour<T>
+    {
+        return new List<V>(IterateInstances<V>());
     }
 
     public abstract void OnInstantiated();
