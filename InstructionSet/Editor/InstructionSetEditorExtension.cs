@@ -139,12 +139,17 @@ namespace InstructionSetEditor
             string result = "";
             string defaultStringField = instructionSet.DefaultStringField();
 
-            foreach (var (field, value) in instructionSet.FunctionIterateInstructions(force: true))
+            foreach (var (field, value, indent) in instructionSet.FunctionIterateInstructions(force: true))
             {
-                string valueStr = value.ValueToString();
-                
+                string valueStr = value.ValueToString();                
                 if (valueStr == null) continue;
                 if (result.Length > 0) result += "\n\n";
+
+                var indentTxt = "";
+                for (var i = 0; i < indent; i++) indentTxt += '\t';
+                valueStr = valueStr.Replace("\n", $"\n{indentTxt}");
+
+                result += indentTxt;
                 if (field == defaultStringField) result += valueStr;
                 else
                 {
@@ -171,6 +176,7 @@ namespace InstructionSetEditor
             instructionSet.instructions.Clear();
 
             string recent_key = null;
+            int recent_indent = 0;
 
             var lines = editorContent.Split('\n');
             foreach (var line in lines)
@@ -180,6 +186,10 @@ namespace InstructionSetEditor
                     recent_key = null;
                     continue;
                 }
+                int indent = 0;
+                foreach (char c in line)
+                    if (c == '\t') indent++;
+                    else break;
                 string key = null;
                 string value = null;
 
@@ -211,7 +221,7 @@ namespace InstructionSetEditor
                 var list = listMap[key];
 
                 //check for multiple line string default
-                if (key == defaultStringField && key == recent_key)
+                if (key == defaultStringField && key == recent_key && indent == recent_indent)
                 {
                     var recent_string = (string)list[list.Count - 1];
                     recent_string += "\n" + valueObject;
@@ -222,12 +232,14 @@ namespace InstructionSetEditor
                     instructionSet.instructions.Add(new InstructionSet.Instruction()
                     {
                         type = key,
-                        valueIndex = list.Count
+                        valueIndex = list.Count,
+                        indent = indent
                     });
                     list.Add(valueObject);
                 }
 
                 recent_key = key;
+                recent_indent = indent;
             }
         }
 

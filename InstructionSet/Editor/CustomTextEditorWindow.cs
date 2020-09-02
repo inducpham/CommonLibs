@@ -20,6 +20,7 @@ namespace InstructionSetEditor
         Rect basePosition, hintPosition, textPosition, statusPosition;
         bool hintEnabled = false;
         TextEditor textEditor = null;
+        GUIStyle textEditorStyle = null;
         bool keyEventUsed = false;
         bool skipNextNoneKey = false;
         string editContent;
@@ -332,6 +333,7 @@ namespace InstructionSetEditor
             bool pageup = Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.PageUp;
             bool pagedown = Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.PageDown;
             bool hinting = Event.current.type == EventType.KeyDown && Event.current.control && (Event.current.keyCode == KeyCode.Space);
+            bool tabbing = Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Tab;
 
             if (closing || scrolling || pageup || pagedown || hinting) UseCurrentKeyEvent();
 
@@ -366,6 +368,14 @@ namespace InstructionSetEditor
 
             this.textEditor = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
             textEditor.multiline = true;
+            if (this.textEditorStyle == null)
+            {
+                this.textEditorStyle = new GUIStyle(textEditor.style);
+                this.textEditorStyle.wordWrap = false;
+            }
+            textEditor.style = this.textEditorStyle;
+
+            if (tabbing) textEditor.Insert('	');
 
             this.UpdateStatus(this.statusPosition);
             #endregion
