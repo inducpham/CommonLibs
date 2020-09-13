@@ -101,12 +101,14 @@ namespace ScriptableObjectBrowser
             currentEditorTypeIndex = browsable_types.IndexOf(type);
 
             if (editors.ContainsKey(type) == false) return;
-            currentEditor = editors[type];
+            this.currentEditor = editors[type];
+            this.currentType = type;
             ResetAssetList(type);
             SelectionChanged();
         }
 
         int currentEditorTypeIndex = 0;
+        System.Type currentType = null;
         ScritpableObjectBrowserEditor currentEditor = null;
         UnityEngine.Object currentObject;
         List<AssetEntry> asset_list = new List<AssetEntry>();
@@ -133,23 +135,33 @@ namespace ScriptableObjectBrowser
             }
 
             foreach (var asset in found_assets)
-            {
-                var name = asset.name;
-                var path = AssetDatabase.GetAssetPath(asset) + "." + name;
-
-                var entry = new AssetEntry()
-                {
-                    path = path,
-                    rpath = ReverseString(path),
-                    name = name,
-                    asset = asset
-                };
-
-                asset_list.Add(entry);
-            }
+                asset_list.Add(CreateAssetEntry(asset));
 
             this.asset_list = asset_list;
             this.sorted_asset_list = new List<AssetEntry>(asset_list);
+        }
+
+        AssetEntry CreateAssetEntry(UnityEngine.Object asset)
+        {
+            var name = asset.name;
+            var path = AssetDatabase.GetAssetPath(asset) + "." + name;
+
+            var entry = new AssetEntry()
+            {
+                path = path,
+                rpath = ReverseString(path),
+                name = name,
+                asset = asset
+            };
+
+            return entry;
+        }
+
+        void AddAssetEntry(UnityEngine.Object asset)
+        {
+            var entry = CreateAssetEntry(asset);
+            this.asset_list.Add(entry);
+            this.ResortEntries(this.filter_text);
         }
 
         class AssetEntry
@@ -649,9 +661,13 @@ namespace ScriptableObjectBrowser
         void FinishCreateNewEntry(string name)
         {
             var e = this.currentEditor;
-            //TODO: implement creating rules here
-            //HEHEHEHEHEHE
-            Debug.Log("CREATE NEW FILE: " + name);
+            var path = this.currentEditor.DefaultStoratePath + "/" + name + ".asset";
+
+            ScriptableObject instance = (ScriptableObject) System.Activator.CreateInstance(this.currentType);
+            instance.name = name;
+
+            AssetDatabase.CreateAsset(instance, path);
+            this.AddAssetEntry(instance);
         }
         #endregion
     }
