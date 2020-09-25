@@ -141,7 +141,7 @@ namespace InstructionSetEditor
 
             foreach (var (field, value, indent) in instructionSet.FunctionIterateInstructions(force: true))
             {
-                string valueStr = value.ValueToString();                
+                string valueStr = value.ValueToString();
                 if (valueStr == null) continue;
                 if (result.Length > 0) result += "\n\n";
 
@@ -438,15 +438,22 @@ namespace InstructionSetEditor
 
         private static List<string> GetHintsUnityObject(this Type type)
         {
+            var collectedAssets = new HashSet<UnityEngine.Object>();
             var results = new List<string>();
             string[] guids = AssetDatabase.FindAssets(string.Format("t:{0}", type.Name));
+            string recent_guids = null;
             for (int i = 0; i < guids.Length; i++)
             {
+                if (guids[i] == recent_guids) continue;
+                recent_guids = guids[0];
                 string assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
-                var asset = AssetDatabase.LoadAssetAtPath(assetPath, type);
-                if (asset != null)
+
+                var assets = AssetDatabase.LoadAllAssetsAtPath(assetPath);
+                foreach (var asset in assets)
                 {
-                    results.Add(ObjectToAssetPath(asset));
+                    if (collectedAssets.Contains(asset)) continue;
+                    collectedAssets.Add(asset);
+                    if (type.IsAssignableFrom(asset.GetType())) results.Add(ObjectToAssetPath(asset));
                 }
             }
             return results;
@@ -468,8 +475,13 @@ namespace InstructionSetEditor
         static UnityEngine.Object AssetPathToObject(string fullpath, System.Type component = null)
         {
             var match = FILE_TEMPLATE.Match(fullpath);
+            var name = match.Groups[1].Value;
             var path = match.Groups[2].Value;
-            return AssetDatabase.LoadAssetAtPath(path, component);
+
+            foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(path))
+                if (asset.name == name) return asset;
+
+            return null;
         }
 
         static string ObjectToAssetPath(UnityEngine.Object obj)
