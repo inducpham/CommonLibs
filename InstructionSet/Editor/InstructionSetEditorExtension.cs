@@ -173,7 +173,7 @@ namespace InstructionSetEditor
             if (listMap == null) return;
 
             foreach (var list in listMap.Values) list.Clear();
-            instructionSet.instructions.Clear();
+            if (instructionSet.instructions != null) instructionSet.instructions.Clear();
 
             string recent_key = null;
             int recent_indent = 0;
