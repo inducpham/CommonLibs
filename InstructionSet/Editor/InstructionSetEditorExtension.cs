@@ -479,7 +479,7 @@ namespace InstructionSetEditor
             var path = match.Groups[2].Value;
 
             foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(path))
-                if (asset.name == name) return asset;
+                if (asset.name == name && component.IsAssignableFrom(asset.GetType())) return asset;
 
             return null;
         }
