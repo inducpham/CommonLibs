@@ -11,6 +11,7 @@ namespace InstructionSetEditor {
 
         static bool selectionChangedMapped = false;
         static Dictionary<string, string> propertyContentMap = new Dictionary<string, string>();
+        static Dictionary<string, float> propertyWidthMap = new Dictionary<string, float>();
         static GUIStyle style;
 
         static GUIStyle GetStyle()
@@ -60,7 +61,8 @@ namespace InstructionSetEditor {
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            return GetStyle().CalcHeight(new GUIContent(MapSerializedPropertyContent(property)), EditorGUIUtility.currentViewWidth) + EditorGUIUtility.singleLineHeight;
+            var viewWidth = propertyWidthMap.ContainsKey(property.propertyPath) ? propertyWidthMap[property.propertyPath] : EditorGUIUtility.currentViewWidth;
+            return GetStyle().CalcHeight(new GUIContent(MapSerializedPropertyContent(property)), viewWidth) + EditorGUIUtility.singleLineHeight;
         }
 
         static SerializedProperty currentProperty = null;
@@ -74,6 +76,7 @@ namespace InstructionSetEditor {
             }
 
             var content = MapSerializedPropertyContent(property);
+            if (position.width > 1) propertyWidthMap[property.propertyPath] = position.width;
 
             var c = GUI.color;
             GUI.color = Color.clear;

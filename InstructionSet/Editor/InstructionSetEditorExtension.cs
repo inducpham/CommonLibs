@@ -142,9 +142,9 @@ namespace InstructionSetEditor
             foreach (var (field, value, indent) in instructionSet.FunctionIterateInstructions(force: true))
             {
                 string valueStr = value.ValueToString();
-                if (valueStr == null) continue;
-                if (result.Length > 0) result += "\n\n";
+                if (valueStr == null) valueStr = "";
 
+                if (result.Length > 0) result += "\n\n";
                 var indentTxt = "";
                 for (var i = 0; i < indent; i++) indentTxt += '\t';
                 valueStr = valueStr.Replace("\n", $"\n{indentTxt}");
@@ -274,6 +274,13 @@ namespace InstructionSetEditor
 
         private static object StringToValue(this string str, Type type)
         {
+            if (str == null || str.Trim().Length <= 0)
+            {
+                if (type == typeof(string)) return "";
+                if (type.IsValueType) return Activator.CreateInstance(type);
+                return null;
+            }
+
             try
             {
                 if (type == typeof(bool) && string.IsNullOrEmpty(str)) return true;

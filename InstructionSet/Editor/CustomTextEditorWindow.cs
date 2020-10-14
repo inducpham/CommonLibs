@@ -26,6 +26,7 @@ namespace InstructionSetEditor
         string editContent;
         string propertyPath;
         Vector2 currentCursor = Vector2.zero;
+        int currentCursorIndex = -1;
         string statusString = "";
 
         Dictionary<string, string> fieldTypeNames;
@@ -47,11 +48,15 @@ namespace InstructionSetEditor
             //instance.ShowAsDropDown(r, r.size);
             //instance.ShowUtility();
             r.y -= 16;
-            r.height = 360;
+            if (r.height < 300) r.height = 360;
             r.xMax += 1;
             var screen_rect = Screen.safeArea;
+            if (r.yMin < screen_rect.yMin)
+                r.yMin = screen_rect.yMin;
             if (r.yMax > screen_rect.yMax)
-                r.y -= (r.yMax - screen_rect.yMax - 20);
+                r.yMax = screen_rect.yMax;
+            //if (r.yMax > screen_rect.yMax)
+            //    r.y -= (r.yMax - screen_rect.yMax - 20);
 
             instance.target = (InstructionSet) prop.GetValue();
             instance.property = prop;
@@ -340,8 +345,14 @@ namespace InstructionSetEditor
             this.UpdateHintingInput();
 
             if (scrolling) textEditor.scrollOffset += Event.current.delta * 10;
-            if (pageup) textEditor.MoveCursorToPosition(textEditor.graphicalCursorPos - new Vector2(0, position.height / 2));
-            if (pagedown) textEditor.MoveCursorToPosition(textEditor.graphicalCursorPos + new Vector2(0, position.height / 2));
+            if (pageup)
+            {
+                for (var i = 0; i < 10; i++) textEditor.MoveUp();
+            }
+            if (pagedown)
+            {
+                for (var i = 0; i < 10; i++) textEditor.MoveDown();
+            }
             if (hinting) this.EnableHinting();
             if (closing)
                 if (this.hintEnabled)
@@ -360,17 +371,20 @@ namespace InstructionSetEditor
             GUI.SetNextControlName("te");
             try
             {
-                GUI.TextArea(this.textPosition, this.editContent); //, EditorStyles.helpBox);
+                GUI.TextArea(this.textPosition, this.editContent, EditorStyles.helpBox);
             }
             catch { this.target = null; }
 
             EditorGUI.FocusTextInControl("te");
 
             this.textEditor = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
-            textEditor.multiline = true;
+            if (this.textEditor != null)
+                textEditor.multiline = true;
+
             if (this.textEditorStyle == null)
             {
-                this.textEditorStyle = new GUIStyle(textEditor.style);
+                this.textEditorStyle = new GUIStyle(EditorStyles.helpBox);
+                this.textEditorStyle.fontSize = 12;
                 this.textEditorStyle.wordWrap = false;
             }
             textEditor.style = this.textEditorStyle;
@@ -380,13 +394,20 @@ namespace InstructionSetEditor
             this.UpdateStatus(this.statusPosition);
             #endregion
 
+            
+
             #region Check cursor position change
-            if (currentCursor != textEditor.graphicalCursorPos || this.editContent.Length != textEditor.text.Length)
-            {
-                if (currentCursor.y != textEditor.graphicalCursorPos.y) DisableHinting();
-                currentCursor = textEditor.graphicalCursorPos;
-                this.OnCursorChange();
-            }
+            if (currentCursorIndex != textEditor.cursorIndex)
+                if (currentCursor != textEditor.graphicalCursorPos || this.editContent.Length != textEditor.text.Length)
+                {
+                    if (this.hintEnabled && currentCursor.y != textEditor.graphicalCursorPos.y)
+                    {
+                        DisableHinting();
+                    }
+                    currentCursor = textEditor.graphicalCursorPos;
+                    currentCursorIndex = textEditor.cursorIndex;
+                    this.OnCursorChange();
+                }
             #endregion
 
             this.editContent = textEditor.text;
