@@ -14,8 +14,9 @@ public class UICameraScaler : MonoBehaviour
         this.targetCamera = this.GetComponent<Camera>();
     }
 
-    private void Awake()
+    private IEnumerator Start()
     {
+        yield return true;
         Update();
     }
 
