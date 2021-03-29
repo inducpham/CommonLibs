@@ -102,6 +102,7 @@ namespace ScriptableObjectBrowser
 
             if (editors.ContainsKey(type) == false) return;
             this.currentEditor = editors[type];
+            this.currentEditor.browser = this;
             this.currentType = type;
             ResetAssetList(type);
             SelectionChanged();
@@ -141,6 +142,11 @@ namespace ScriptableObjectBrowser
             this.sorted_asset_list = new List<AssetEntry>(asset_list);
         }
 
+        void ResetAssetList()
+        {
+            ResetAssetList(this.currentType);
+        }
+
         AssetEntry CreateAssetEntry(UnityEngine.Object asset)
         {
             var name = asset.name;
@@ -157,10 +163,31 @@ namespace ScriptableObjectBrowser
             return entry;
         }
 
+        void SyncAssetEntry(AssetEntry entry)
+        {
+            var asset = entry.asset;
+            var name = asset.name;
+            var path = AssetDatabase.GetAssetPath(asset) + "." + name;
+
+            entry.path = path;
+            entry.rpath = ReverseString(path);
+            entry.name = name;
+        }
+
         void AddAssetEntry(UnityEngine.Object asset)
         {
             var entry = CreateAssetEntry(asset);
             this.asset_list.Add(entry);
+            this.ResortEntries(this.filter_text);
+        }
+
+        void AddAssetEntries(List<UnityEngine.Object> assets)
+        {
+            foreach (var asset in assets)
+            {
+                var entry = CreateAssetEntry(asset);
+                this.asset_list.Add(entry);
+            }
             this.ResortEntries(this.filter_text);
         }
 
@@ -270,9 +297,14 @@ namespace ScriptableObjectBrowser
 
             EditorGUILayout.BeginHorizontal();
 
-            GUI.enabled = currentEditor.DefaultStoratePath != null;
+            GUI.enabled = currentEditor.DefaultStoragePath != null;
             if (GUILayout.Button(EditorGUIUtility.IconContent("Toolbar Plus"), EditorStyles.miniButton, GUILayout.Width(24), GUILayout.Height(18)))
                 this.CreateNewEntry();
+            GUI.enabled = true;
+
+            GUI.enabled = currentEditor.ContextMenu != null;
+            if (GUILayout.Button(EditorGUIUtility.IconContent("SettingsIcon"), EditorStyles.miniButton, GUILayout.Width(24), GUILayout.Height(18)))
+                currentEditor.ContextMenu.ShowAsContext();
             GUI.enabled = true;
 
             GUI.SetNextControlName(filter_control_name);
@@ -308,6 +340,13 @@ namespace ScriptableObjectBrowser
             {
                 Event.current.Use();
                 this.CreateNewEntry();
+            }
+
+            if (Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.F2 ||
+                ((Event.current.control || Event.current.command) && Event.current.keyCode == KeyCode.R)))
+            {
+                Event.current.Use();
+                this.RenameCurrentEntry();
             }
 
             if (GUI.GetNameOfFocusedControl() == filter_control_name && Event.current.type == EventType.Layout)
@@ -596,6 +635,36 @@ namespace ScriptableObjectBrowser
             return new string(arr);
         }
 
+        void RenameCurrentEntry()
+        {
+            if (currentObject == null) return;
+            var r = new Rect();
+            r.position = this.position.position;
+            r.y += 42;
+            r.x += 32;
+            r.width = BROWSE_AREA_WIDTH - 34;
+            r.height = 18;
+            PopupWindow.Show(r, new CreateNewEntryPopup(r, FinishRenameCurrentEntry));
+        }
+
+        void FinishRenameCurrentEntry(string newName)
+        {
+            if (currentObject == null) return;
+            var path = AssetDatabase.GetAssetPath(currentObject);
+
+            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path) != currentObject) return;
+            var folderPath = path.Substring(0, path.LastIndexOf('/') + 1);
+
+            var new_path = folderPath + newName + ".asset";
+            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(new_path) != null) return;
+
+            currentObject.name = newName;
+            EditorUtility.SetDirty(currentObject);
+            AssetDatabase.RenameAsset(path, newName + ".asset");
+            AssetDatabase.SaveAssets();
+            SyncAssetEntry(currentSelectionEntry);
+        }
+
         void CreateNewEntry()
         #region CreateNewEntry
         {
@@ -661,13 +730,49 @@ namespace ScriptableObjectBrowser
         void FinishCreateNewEntry(string name)
         {
             var e = this.currentEditor;
-            var path = this.currentEditor.DefaultStoratePath + "/" + name + ".asset";
+            var path = this.currentEditor.DefaultStoragePath + "/" + name + ".asset";
 
             ScriptableObject instance = (ScriptableObject) System.Activator.CreateInstance(this.currentType);
             instance.name = name;
 
             AssetDatabase.CreateAsset(instance, path);
             this.AddAssetEntry(instance);
+        }
+
+        public UnityEngine.Object CreateNewEntry(string name)
+        {
+            var e = this.currentEditor;
+            var path = this.currentEditor.DefaultStoragePath + "/" + name + ".asset";
+            if (AssetDatabase.LoadAssetAtPath(path, typeof(UnityEngine.Object)) != null) return null;
+
+            ScriptableObject instance = (ScriptableObject)System.Activator.CreateInstance(this.currentType);
+            instance.name = name;
+
+            AssetDatabase.CreateAsset(instance, path);
+            this.AddAssetEntry(instance);
+
+            return instance;
+        }
+
+        public List<UnityEngine.Object> CreateNewEntries(IEnumerable<string> names)
+        {
+            var e = this.currentEditor;
+            List<UnityEngine.Object> entries = new List<UnityEngine.Object>();
+
+            foreach (var name in names)
+            {
+                var path = this.currentEditor.DefaultStoragePath + "/" + name + ".asset";
+                if (AssetDatabase.LoadAssetAtPath(path, typeof(UnityEngine.Object)) != null) continue;
+
+                ScriptableObject instance = (ScriptableObject)System.Activator.CreateInstance(this.currentType);
+                instance.name = name;
+
+                AssetDatabase.CreateAsset(instance, path);
+                entries.Add(instance);
+            }
+
+            AddAssetEntries(entries);
+            return entries;
         }
         #endregion
     }

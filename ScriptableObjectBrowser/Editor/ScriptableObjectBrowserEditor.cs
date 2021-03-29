@@ -14,13 +14,16 @@ namespace ScriptableObjectBrowser
 {
     public abstract class ScritpableObjectBrowserEditor
     {
+        public ScriptableObjectBrowser browser;
         protected UnityEditor.Editor cachedEditor = null;
 
         public virtual void SetTargetObjects(UnityEngine.Object[] objs) { }
         public virtual void RenderInspector() { }
 
         protected string defaultStoragePath = null;
-        public string DefaultStoratePath => defaultStoragePath;
+        protected GenericMenu contextMenu = null;
+        public string DefaultStoragePath => defaultStoragePath;
+        public GenericMenu ContextMenu => contextMenu;
 
         protected T CreateAsset<T>(string path) where T : UnityEngine.Object
         {
@@ -104,6 +107,21 @@ namespace ScriptableObjectBrowser
             dir = dir.Substring(i);
 
             return dir;
+        }
+
+        protected List<T> FindAllAssets<T>() where T : UnityEngine.Object
+        {
+            List<T> results = new List<T>();
+            HashSet<string> assetPaths = new HashSet<string>();
+
+            foreach (var objUID in AssetDatabase.FindAssets($"t:{typeof(T).Name}"))
+                assetPaths.Add(AssetDatabase.GUIDToAssetPath(objUID));
+
+            foreach (var assetPath in assetPaths)
+                foreach (var loadedAsset in AssetDatabase.LoadAllAssetsAtPath(assetPath))
+                    if (loadedAsset.GetType() == typeof(T)) results.Add((T)loadedAsset);
+
+            return results;
         }
 
         protected List<T> FindAllLocalAssets<T>(UnityEngine.Object asset) where T : UnityEngine.Object
