@@ -9,20 +9,19 @@ public class BinaryJSONSerializer : MonoBehaviour
 
     static string SEED = "V@#IXS0!@/,.ASD123";
 
-    //public class Test {
-    //    public string s1;
-    //    public string s2;
+    //public class Test
+    //{
+    //    public Dictionary<string, int> dict = new Dictionary<string, int>();
     //}
 
     //private void Start()
     //{
-
     //    var test = new Test();
-    //    test.s1 = "s1";
-    //    test.s2 = "s2";
+    //    test.dict["a"] = 22;
 
     //    WriteToFile("", "test.bin", test);
     //    test = ReadFromFile<Test>("", "test.bin");
+    //    Debug.Log(test.dict["a"]);
     //}
 
     public static void WriteToFile(string seed, string path, System.Object obj)

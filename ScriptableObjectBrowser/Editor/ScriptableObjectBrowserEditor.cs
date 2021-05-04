@@ -20,6 +20,8 @@ namespace ScriptableObjectBrowser
         public virtual void SetTargetObjects(UnityEngine.Object[] objs) { }
         public virtual void RenderInspector() { }
 
+        protected bool createDataFolder = false;
+        public bool CreateDataFolder => createDataFolder;
         protected string defaultStoragePath = null;
         protected GenericMenu contextMenu = null;
         public string DefaultStoragePath => defaultStoragePath;
@@ -170,7 +172,8 @@ namespace ScriptableObjectBrowser
 
         protected void DrawDefaultInspector()
         {
-            this.cachedEditor.DrawDefaultInspector();
+            //this.cachedEditor.DrawDefaultInspector();
+            this.cachedEditor.OnInspectorGUI();
         }
 
         public virtual void CustomInspector(SerializedObject obj)
@@ -181,12 +184,19 @@ namespace ScriptableObjectBrowser
         protected void ButtonRun(string label, Action<T> action)
         {
             if (Targets.Count() > 1) return;
-            if (GUILayout.Button(label, EditorStyles.miniButton)) action(Target);
+            if (GUILayout.Button(label, EditorStyles.miniButton))
+            {
+                action(Target);
+                SetDirty(Target);
+            }
         }
 
         protected void ButtonRunPrompt(string label, string prompt, Action<T, string> action)
         {
-            this.ButtonRun(label, (t) => PromptForText.Show(prompt, (str) => action(t, str)));
+            this.ButtonRun(label, (t) => PromptForText.Show(prompt, (str) => {
+                action(t, str);
+                SetDirty(t);
+            }));
         }
 
         protected void ButtonRunForEach(string label, Action<T> action)
@@ -196,17 +206,29 @@ namespace ScriptableObjectBrowser
 
         protected void ButtonRunForEachPrompt(string label, string prompt, Action<T, string> action)
         {
-            this.ButtonRunForEach(label, (t) => PromptForText.Show(prompt, (str) => action(t, str)));
+            this.ButtonRunForEach(label, (t) => PromptForText.Show(prompt, (str) => {
+                action(t, str);
+                SetDirty(t);
+            }));
         }
 
         protected void RunForEach(Action<T> action)
         {
-            foreach (var target in this.Targets) action(target);
+            foreach (var target in this.Targets)
+            {
+                action(target);
+                SetDirty(target);
+            }
         }
 
         protected void SetDirty(UnityEngine.Object target)
         {
             EditorUtility.SetDirty(target);
+        }
+
+        protected void Space()
+        {
+            GUILayout.Space(32);
         }
     }
 }

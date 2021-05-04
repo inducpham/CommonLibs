@@ -1,4 +1,9 @@
-﻿using System.Collections;
+﻿///
+/// Scene asset allow selecting scene as asset. Note that on runtime
+/// this can only access scene name, not scene reference
+///
+
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_EDITOR

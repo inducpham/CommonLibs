@@ -136,6 +136,7 @@ namespace InstructionSetEditor
         
         public static string DefaultToEditorContent(this InstructionSet instructionSet, bool highlight = false)
         {
+            if (instructionSet.instructions == null) instructionSet.instructions = new List<InstructionSet.Instruction>();
             string result = "";
             string defaultStringField = instructionSet.DefaultStringField();
 

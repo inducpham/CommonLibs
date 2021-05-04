@@ -150,6 +150,7 @@ namespace ScriptableObjectBrowser
         AssetEntry CreateAssetEntry(UnityEngine.Object asset)
         {
             var name = asset.name;
+
             var path = AssetDatabase.GetAssetPath(asset) + "." + name;
 
             var entry = new AssetEntry()
@@ -730,20 +731,21 @@ namespace ScriptableObjectBrowser
         void FinishCreateNewEntry(string name)
         {
             var e = this.currentEditor;
-            var path = this.currentEditor.DefaultStoragePath + "/" + name + ".asset";
-
-            ScriptableObject instance = (ScriptableObject) System.Activator.CreateInstance(this.currentType);
-            instance.name = name;
-
-            AssetDatabase.CreateAsset(instance, path);
-            this.AddAssetEntry(instance);
+            CreateNewEntry(name);
         }
-
+        
         public UnityEngine.Object CreateNewEntry(string name)
         {
             var e = this.currentEditor;
-            var path = this.currentEditor.DefaultStoragePath + "/" + name + ".asset";
-            if (AssetDatabase.LoadAssetAtPath(path, typeof(UnityEngine.Object)) != null) return null;
+            string path;
+
+            if (this.currentEditor.CreateDataFolder)
+            {
+                AssetDatabase.CreateFolder(this.currentEditor.DefaultStoragePath, name);
+                path = this.currentEditor.DefaultStoragePath + "/" + name + "/" + name + ".asset";
+            }
+            else
+                path = this.currentEditor.DefaultStoragePath + "/" + name + ".asset";
 
             ScriptableObject instance = (ScriptableObject)System.Activator.CreateInstance(this.currentType);
             instance.name = name;
@@ -761,7 +763,14 @@ namespace ScriptableObjectBrowser
 
             foreach (var name in names)
             {
-                var path = this.currentEditor.DefaultStoragePath + "/" + name + ".asset";
+                string path;
+                if (this.currentEditor.CreateDataFolder)
+                {
+                    AssetDatabase.CreateFolder(this.currentEditor.DefaultStoragePath, name);
+                    path = this.currentEditor.DefaultStoragePath + "/" + name + "/" + name + ".asset";
+                }
+                else
+                    path = this.currentEditor.DefaultStoragePath + "/" + name + ".asset";
                 if (AssetDatabase.LoadAssetAtPath(path, typeof(UnityEngine.Object)) != null) continue;
 
                 ScriptableObject instance = (ScriptableObject)System.Activator.CreateInstance(this.currentType);
