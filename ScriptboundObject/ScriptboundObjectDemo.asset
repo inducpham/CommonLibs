@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b45b079710bcf33438c91879a98016f3, type: 3}
+  m_Name: ScriptboundObjectDemo
+  m_EditorClassIdentifier: 
+  scriptStringValues:
+  - This is a line that is here
+  - there are just something that is wrong
+  - are you doing ok?
+  scriptIntValues: 0100000001000000
+  scriptFloatValues: []
+  scriptBoolValues: 
+  scriptObjectValues: []
+  scriptInstructions:
+  - instructionName: Increment
+    parameters: []
+    indent: 0
+    controlif: 0
+    controlloop: 0
+  - instructionName: Increment
+    parameters: []
+    indent: 0
+    controlif: 0
+    controlloop: 0
+  - instructionName: Line
+    parameters:
+    - type: 0
+      valueIndex: 0
+    indent: 0
+    controlif: 0
+    controlloop: 0
+  - instructionName: Hello
+    parameters:
+    - type: 4
+      valueIndex: 0
+    - type: 0
+      valueIndex: 1
+    indent: 0
+    controlif: 0
+    controlloop: 0
+  - instructionName: Hello
+    parameters:
+    - type: 4
+      valueIndex: 1
+    - type: 0
+      valueIndex: 2
+    indent: 0
+    controlif: 0
+    controlloop: 0
+  val: 0
