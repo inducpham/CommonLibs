@@ -378,13 +378,22 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         //Debug.Log(string.Format("{0} - {1} - {2} - {3}", line_mod, line_method, line_index, line_var));
         hint_result_input = null;
 
-        if (line_method == null) return;
-        if (methodReflections.ContainsKey(line_method) == false) return;
-        var method = methodReflections[line_method];
-        var parameters = method.GetParameters();
-        if (line_index < 0 || line_index >= parameters.Length) return;
+        ScriptboundObjectEditorHintPopup popup = null;
 
-        var popup = new ScriptboundObjectEditorHintPopup(parameters[line_index].ParameterType, line_var);
+        if (line_index == -1) popup = new ScriptboundObjectEditorHintPopup(methodReflections, line_var);
+        if (line_index >= 0)
+        {
+            if (line_method == null) return;
+            if (methodReflections.ContainsKey(line_method) == false) return;
+            var method = methodReflections[line_method];
+            var parameters = method.GetParameters();
+            if (line_index >= parameters.Length) return;
+            var param_type = parameters[line_index].ParameterType;
+            if (param_type.IsPrimitive || param_type == typeof(string)) return;
+
+            popup = new ScriptboundObjectEditorHintPopup(parameters[line_index].ParameterType, line_var);
+        }
+
         popup.callbackClose += () =>
         {
             hint_popup_completed = true;
@@ -398,4 +407,3 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     }
 
 }
-

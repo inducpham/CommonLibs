@@ -13,10 +13,8 @@ MonoBehaviour:
   m_Name: ScriptboundObjectDemo
   m_EditorClassIdentifier: 
   scriptStringValues:
-  - This is a line that is here
-  - there are just something that is wrong
-  - are you doing ok?
-  scriptIntValues: 0100000001000000
+  - Assets
+  scriptIntValues: 00000000
   scriptFloatValues: []
   scriptBoolValues: 
   scriptObjectValues: []
@@ -31,28 +29,12 @@ MonoBehaviour:
     indent: 0
     controlif: 0
     controlloop: 0
-  - instructionName: Line
-    parameters:
-    - type: 0
-      valueIndex: 0
-    indent: 0
-    controlif: 0
-    controlloop: 0
   - instructionName: Hello
     parameters:
     - type: 4
       valueIndex: 0
     - type: 0
-      valueIndex: 1
-    indent: 0
-    controlif: 0
-    controlloop: 0
-  - instructionName: Hello
-    parameters:
-    - type: 4
-      valueIndex: 1
-    - type: 0
-      valueIndex: 2
+      valueIndex: 0
     indent: 0
     controlif: 0
     controlloop: 0

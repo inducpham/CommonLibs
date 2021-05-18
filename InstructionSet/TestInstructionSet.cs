@@ -11,8 +11,8 @@ public class TestInstructionSet : ScriptableObject
     {
         [InstructionSet.Default]
         public List<string> lines;
-        public List<PortraitInstance> portrait;
-        public List<PortraitInstance.Mood> mood;
+        //public List<PortraitInstance> portrait;
+        //public List<PortraitInstance.Mood> mood;
         public List<string> title;
 
         public List<bool> clear;

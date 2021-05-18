@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEditor;
 using FuzzyFinder;
 using UnityEditor.IMGUI.Controls;
+using System.Reflection;
 
 public class ScriptboundObjectEditorHintPopup : PopupWindowContent
 {
@@ -25,26 +26,40 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
     Dictionary<string, string> mapSearchValues = new Dictionary<string, string>();
     List<SearchMatch> matches;
 
-    void SetupSearches()
+    public ScriptboundObjectEditorHintPopup(List<string> available_options, string existing_value = null)
     {
+        Setup(available_options, existing_value);
+    }
+
+    public ScriptboundObjectEditorHintPopup(Dictionary<string, MethodInfo> methodReflections, string existing_value = null)
+    {
+        Setup(new List<string>(methodReflections.Keys), existing_value);
+    }
+
+    public ScriptboundObjectEditorHintPopup(System.Type hintType, string existing_value = null)
+    {
+        this.hintType = hintType;
         var type = hintType;
+        var options = new List<string>();
 
         if (type.IsEnum)
         {
             var names = System.Enum.GetNames(type);
-            searchPaths = new List<string>(names);
+            options = new List<string>(names);
         }
         else
         {
-            searchPaths = new List<string>(AssetDatabase.GetAllAssetPaths());
-            searchPaths.RemoveAll((s) => s.StartsWith("Assets") == false);
+            options = new List<string>();
+            //options = new List<string>(AssetDatabase.GetAllAssetPaths());
+            //options.RemoveAll((s) => s.StartsWith("Assets") == false);
         }
+
+        Setup(options, existing_value);
     }
 
     #region Main components
-    public ScriptboundObjectEditorHintPopup(System.Type hintType, string existing_value = null)
+    void Setup(List<string> available_options, string existing_value = null)
     {
-        this.hintType = hintType;
         if (existing_value != null)
         {
             existing_value = existing_value.Trim();
@@ -55,7 +70,9 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
         autocompleteSearchField.searchString = textInput;
         autocompleteSearchField.onInputChanged = OnInputChanged;
         autocompleteSearchField.onConfirm = OnConfirm;
-        SetupSearches();
+
+        searchPaths = new List<string>(available_options);
+
         searchPaths.Sort((s1, s2) => s1.CompareTo(s2));
         matches = new List<SearchMatch>(searchPaths.Count);
 
@@ -96,7 +113,6 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
             {
                 autocompleteSearchField.AddResult(searchPath, mapSearchValues.ContainsKey(searchPath) ? mapSearchValues[searchPath] : null);
                 count++;
-                Debug.Log(count);
                 if (count > 20) break;
             }
         }
@@ -170,7 +186,7 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
         public Action<string> onInputChanged;
         public Action<string, string> onConfirm;
         Dictionary<string, string> altValues = new Dictionary<string, string>();
-        public string searchString;
+        public string searchString = null;
         public int maxResults = 15;
 
         [SerializeField]
@@ -184,7 +200,7 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
         Vector2 previousMousePosition;
         bool selectedIndexByMouse;
 
-        bool showResults;
+        bool showResults = true;
 
         public void AddResult(string result, string value = null)
         {
