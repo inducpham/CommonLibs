@@ -25,9 +25,9 @@ public class ScriptboundObjectDemo : ScriptboundObject
         Debug.Log(val);
     }
 
-    public void Test(int count, string content)
+    public void Sprite(Sprite sprite)
     {
-
+        Debug.Log(sprite);
     }
 
     public enum HelloType { HEY, HI, HOWDY }

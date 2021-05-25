@@ -9,6 +9,7 @@ using System;
 public partial class ScriptboundObjectEditor : UnityEditor.Editor
 {
     private Dictionary<string, MethodInfo> methodReflections;
+    private Dictionary<string, string> methodDescriptions;
     private string previewContent;
     private string previewAPIs;
     private string controlName;
@@ -155,7 +156,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     /// SECTION DRAW PREVIEW
     bool preview_showing = true;
     static GUIStyle preview_style = null;
-    Vector2 previewScrollPosition;
+    Vector2 scrollPosition;
     void DrawPreview()
     {
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
@@ -165,8 +166,9 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         GUILayout.FlexibleSpace();
         bool editPressed = GUILayout.Button("Edit", EditorStyles.miniButton);
         EditorGUILayout.EndHorizontal();
+        EditorGUILayout.LabelField(" ");
 
-        previewScrollPosition = EditorGUILayout.BeginScrollView(previewScrollPosition, GUILayout.Height(MIN_HEIGHT));
+        scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(MIN_HEIGHT));
         GUILayout.Label(previewContent, preview_style, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
         GUILayout.FlexibleSpace();
         EditorGUILayout.EndScrollView();
@@ -179,8 +181,6 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             SwitchToEditMode();
     }
 
-    private Vector2 scrollPosition;
-
     ///////////////////////////////////////////////////////////////
     /// SECTION DRAW EDITOR
     string editing_contents = "";
@@ -188,6 +188,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     int hint_cursor_position = -1;
     bool hint_popup_completed = false;
     string hint_result_input = null;
+    UnityEngine.Object hint_result_input_object = null;
     int hint_popup_completed_frameskip = 2;
     Rect recent_text_editor_rect = new Rect();
     Rect hint_rect_position = new Rect();
@@ -270,6 +271,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         {
             var bgc = GUI.backgroundColor;
             GUI.backgroundColor = Color.clear;
+            EditorGUILayout.LabelField("Method hints");
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(MIN_HEIGHT));
             GUI.SetNextControlName(controlName);
             try {
@@ -340,13 +342,12 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
                 if (hint_result_input != null)
                 {
                     var hint_result = hint_result_input;
-                    editing_contents = editing_contents.Insert(hint_cursor_position, hint_result);
-                    tEditor.text = editing_contents;
-                    tEditor.cursorIndex += hint_result.Length;
+                    if (hint_result_input_object != null) hint_result = ObjectToString(hint_result_input_object);
+                    AutoCompleteEditingContents(tEditor, hint_cursor_position, hint_result);
                 }
                 tEditor.selectIndex = tEditor.cursorIndex;
-                Repaint();
             }
+            Repaint();
         }
         #endregion
 
@@ -370,17 +371,48 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         //}
 
         EditorGUILayout.EndVertical();
+    }
 
+    void AutoCompleteEditingContents(TextEditor te, int cursor_index, string content)
+    {
+        //take explicit scenario out first
+        if (cursor_index == 0)
+        {
+            editing_contents = editing_contents.Insert(cursor_index, content);
+            te.text = editing_contents;
+            te.cursorIndex += content.Length;
+            return;
+        }
+
+        char starting_char = '?';
+        int start_cursor_index = cursor_index;
+        bool starting_char_break = false;
+
+        do
+        {
+            start_cursor_index--;
+            starting_char = start_cursor_index < 0 ? ' ' : editing_contents[start_cursor_index];
+            starting_char_break = starting_char == ' ' || starting_char == '\n' || starting_char == '\t' || starting_char == ':' || starting_char == ',';
+        }
+        while (start_cursor_index >= 0 && starting_char_break == false);
+
+        start_cursor_index++;
+        var remove_len = cursor_index - start_cursor_index;
+        editing_contents = editing_contents.Remove(start_cursor_index, remove_len);
+        editing_contents = editing_contents.Insert(start_cursor_index, content);
+        te.text = editing_contents;
+        te.cursorIndex += content.Length - remove_len;
     }
 
     void CreateSuggestionPopup(string line_mod, string line_method, int line_index, string line_var)
     {
         //Debug.Log(string.Format("{0} - {1} - {2} - {3}", line_mod, line_method, line_index, line_var));
         hint_result_input = null;
+        hint_result_input_object = null;
 
         ScriptboundObjectEditorHintPopup popup = null;
 
-        if (line_index == -1) popup = new ScriptboundObjectEditorHintPopup(methodReflections, line_var);
+        if (line_index <= -1) popup = new ScriptboundObjectEditorHintPopup(methodReflections, line_var);
         if (line_index >= 0)
         {
             if (line_method == null) return;
@@ -401,6 +433,12 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         popup.callbackInput += (result) =>
         {
             hint_result_input = result;
+            hint_popup_completed = true;
+        };
+        popup.callbackInputObject += (str, result) =>
+        {
+            hint_result_input = str;
+            hint_result_input_object = result;
             hint_popup_completed = true;
         };
         PopupWindow.Show(hint_rect_position, popup);

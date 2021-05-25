@@ -49,17 +49,23 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 
             var parameters = Target.ExtractParameters(method, instruction);
 
-            string str_params = "";
-            if (parameters.Length == 1 && parameters[0].GetType() == typeof(string))
+            string str_params = " ";
+
+            if (parameters.Length == 1 && instruction.parameters[0].type == ScriptboundObject.Instruction.ParamType.STRING)
                 str_params += parameters[0].ToString();
             else
-                foreach (var param in parameters)
+                for (var i = 0; i < instruction.parameters.Count; i++)
                 {
-                    if (param == null) continue;
-                    if (param != parameters[0]) str_params += ", ";
-                    var param_str = param.ToString().Replace("\\,", ",");
-                    param_str = param_str.Replace(",", "\\,");
-                    str_params += param_str;
+                    var param = parameters[i];
+                    if (i > 0) str_params += ", ";
+                    if (instruction.parameters[i].type == ScriptboundObject.Instruction.ParamType.OBJECT)
+                        str_params += ObjectToString((UnityEngine.Object) param);
+                    else if (param != null)
+                    {
+                        var param_str = param.ToString().Replace("\\,", ",");
+                        param_str = param_str.Replace(",", "\\,");
+                        str_params += param_str;
+                    }
                 }
             str_params = str_params.Replace("\n", indent_replacement);
             results += str_params;
@@ -145,6 +151,8 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             return;
         }
 
+        if (contents == null) throw new ParsingException(string.Format("Parameter count for {0} mismatched. Expected {1}, received {2}", method.Name, parameters.Length, 0));
+
         var tokens = contents.Split(',');
         var token_len = tokens.Length;
 
@@ -229,8 +237,12 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 
         if (typeof(UnityEngine.Object).IsAssignableFrom(type))
         {
-            throw new ParsingException("Instruction object type parse not implemented");
-            //return;
+            //params_str: name(21412)
+            param.type = ScriptboundObject.Instruction.ParamType.OBJECT;
+            param.valueIndex = clone.scriptObjectValues.Count;
+            var val = StringToObject(param_str);
+            clone.scriptObjectValues.Add(val);
+            return;
         }
 
         throw new ParsingException("Instruction param type not supported: " + type.Name);
