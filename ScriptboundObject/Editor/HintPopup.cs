@@ -37,7 +37,22 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
         Setup(new List<string>(methodReflections.Keys), existing_value);
     }
 
+    public ScriptboundObjectEditorHintPopup(System.Type hintType, UnityEngine.Object obj = null)
+    {
+        if (obj == null) HintTypeConstructor(hintType);
+        else
+        {
+            var existing_value = AssetDatabase.GetAssetPath(obj) + ":" + obj.name;
+            HintTypeConstructor(hintType, existing_value);
+        }
+    }
+
     public ScriptboundObjectEditorHintPopup(System.Type hintType, string existing_value = null)
+    {
+        HintTypeConstructor(hintType, existing_value);
+    }
+    
+    void HintTypeConstructor(System.Type hintType, string existing_value = null)
     {
         this.hintType = hintType;
         var type = hintType;

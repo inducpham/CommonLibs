@@ -52,10 +52,18 @@ public class ScriptboundObject : ScriptableObject
         public string instructionName;
         public List<Parameter> parameters = new List<Parameter>();
         public int indent = 0;
-        public bool controlif, controlloop;
+        public bool controlIf, controlLoop;
+
+        [System.NonSerialized]
+        public int instructionNext, instructionChild;
     }
 
     public List<Instruction> scriptInstructions;
+
+    void RemapInstructionSequences()
+    {
+
+    }
 
     public void RunInstance()
     {
@@ -69,6 +77,8 @@ public class ScriptboundObject : ScriptableObject
         // register the instruction index
         var previous_instruction_index = -1;
         var current_instruction_index = 0;
+
+        RemapInstructionSequences();
 
         // start looping through the instructions
         while (current_instruction_index < scriptInstructions.Count)

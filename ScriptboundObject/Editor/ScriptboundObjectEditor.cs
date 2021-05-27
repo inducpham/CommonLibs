@@ -271,7 +271,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         {
             var bgc = GUI.backgroundColor;
             GUI.backgroundColor = Color.clear;
-            EditorGUILayout.LabelField("Method hints");
+            EditorGUILayout.LabelField(" "); //TODO: method hinting here
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(MIN_HEIGHT));
             GUI.SetNextControlName(controlName);
             try {
@@ -423,7 +423,9 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             var param_type = parameters[line_index].ParameterType;
             if (param_type.IsPrimitive || param_type == typeof(string)) return;
 
-            popup = new ScriptboundObjectEditorHintPopup(parameters[line_index].ParameterType, line_var);
+            if (typeof(UnityEngine.Object).IsAssignableFrom(param_type) && StringToObject(line_var) != null)
+                popup = new ScriptboundObjectEditorHintPopup(param_type, StringToObject(line_var));
+            else popup = new ScriptboundObjectEditorHintPopup(param_type, line_var);
         }
 
         popup.callbackClose += () =>
