@@ -49,7 +49,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             control += instruction.instructionName;
 
             if (method.GetParameters().Length <= 0) results += string.Format(highlight ? "<b>{0}</b>" : "{0}", control);
-            else results += string.Format(highlight ? "<b>{0}:</b> " : "{0}: z", control);
+            else results += string.Format(highlight ? "<b>{0}:</b>" : "{0}:", control);
 
             if (method.GetParameters().Length > 0)
             {
