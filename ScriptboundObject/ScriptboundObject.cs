@@ -18,6 +18,13 @@ public static class ScriptboundObjectExtension
         var o = ScriptableObject.Instantiate(obj);
         return o;
     }
+
+    public static IEnumerable<ScriptboundObject.Instruction> DuplicateAndIterate<T>(this T obj) where T : ScriptboundObject
+    {
+        var o = ScriptableObject.Instantiate(obj);
+        foreach (var instruction in o.IterateInstance())
+            yield return instruction;
+    }
 }
 
 public class ScriptboundObject : ScriptableObject
@@ -62,10 +69,30 @@ public class ScriptboundObject : ScriptableObject
 
     void RemapInstructionSequences()
     {
+        for (var i = 0; i < scriptInstructions.Count; i++)
+        {
+            var instruction = scriptInstructions[i];
+            instruction.instructionChild = -1;
+            instruction.instructionNext = -1;
 
+            if (i == scriptInstructions.Count - 1) break;
+
+            for (var k = i + 1; k < scriptInstructions.Count; k++)
+                if (scriptInstructions[k].indent <= instruction.indent)
+                {
+                    instruction.instructionNext = k;
+                    break;
+                }
+            if (scriptInstructions[i + 1].indent > instruction.indent) instruction.instructionChild = i + 1;
+        }
     }
 
     public void RunInstance()
+    {
+        foreach (var instruction in IterateInstance()) ;
+    }
+
+    public IEnumerable<Instruction> IterateInstance()
     {
         // create the loop counts
         var loop_counts = new List<int>(scriptInstructions.Count);
@@ -83,19 +110,29 @@ public class ScriptboundObject : ScriptableObject
         // start looping through the instructions
         while (current_instruction_index < scriptInstructions.Count)
         {
+            if (current_instruction_index == -1) break;
+
             // do stuffs here
+
             var current_instruction = scriptInstructions[current_instruction_index];
+            var success = true;
             if (mapMethods.ContainsKey(current_instruction.instructionName))
             {
                 var method = mapMethods[current_instruction.instructionName];
                 var parameters = ExtractParameters(method, current_instruction);
-                method.Invoke(this, parameters);
+                var result = method.Invoke(this, parameters);
+
+                if (current_instruction.controlIf && method.ReturnType == typeof(bool)) success = (bool)result;
+                yield return current_instruction;
             }
 
             // move on to the next instruction here
             // TODO: check for indentation
             previous_instruction_index = current_instruction_index;
-            current_instruction_index += 1;
+            if (current_instruction.controlIf && success && current_instruction.instructionChild >= 0)
+                current_instruction_index = current_instruction.instructionChild;
+            else
+                current_instruction_index = current_instruction.instructionNext;
         }
     }
 

@@ -8,8 +8,8 @@ using System;
 
 public partial class ScriptboundObjectEditor : UnityEditor.Editor
 {
-    public class ParsingException : Exception { 
-        public ParsingException(string reason = null) : base(reason) {}
+    public class ParsingException : Exception {
+        public ParsingException(string reason = null) : base(reason) { }
     }
 
     private string GetPreviewContents()
@@ -44,31 +44,38 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
                 indent_replacement += '\t';
             }
 
-            if (method.GetParameters().Length <= 0) results += string.Format(highlight ? "<b>{0}</b> " : "{0} ", instruction.instructionName);
-            else results += string.Format(highlight? "<b>{0}:</b> ": "{0}: ", instruction.instructionName);
+            var control = "";
+            if (instruction.controlIf) control += "if ";
+            control += instruction.instructionName;
 
-            var parameters = Target.ExtractParameters(method, instruction);
+            if (method.GetParameters().Length <= 0) results += string.Format(highlight ? "<b>{0}</b>" : "{0}", control);
+            else results += string.Format(highlight ? "<b>{0}:</b> " : "{0}: z", control);
 
-            string str_params = " ";
+            if (method.GetParameters().Length > 0)
+            {
+                var parameters = Target.ExtractParameters(method, instruction);
 
-            if (parameters.Length == 1 && instruction.parameters[0].type == ScriptboundObject.Instruction.ParamType.STRING)
-                str_params += parameters[0].ToString();
-            else
-                for (var i = 0; i < instruction.parameters.Count; i++)
-                {
-                    var param = parameters[i];
-                    if (i > 0) str_params += ", ";
-                    if (instruction.parameters[i].type == ScriptboundObject.Instruction.ParamType.OBJECT)
-                        str_params += ObjectToString((UnityEngine.Object) param);
-                    else if (param != null)
+                string str_params = " ";
+
+                if (parameters.Length == 1 && instruction.parameters[0].type == ScriptboundObject.Instruction.ParamType.STRING)
+                    str_params += parameters[0].ToString();
+                else
+                    for (var i = 0; i < instruction.parameters.Count; i++)
                     {
-                        var param_str = param.ToString().Replace("\\,", ",");
-                        param_str = param_str.Replace(",", "\\,");
-                        str_params += param_str;
+                        var param = parameters[i];
+                        if (i > 0) str_params += ", ";
+                        if (instruction.parameters[i].type == ScriptboundObject.Instruction.ParamType.OBJECT)
+                            str_params += ObjectToString((UnityEngine.Object)param);
+                        else if (param != null)
+                        {
+                            var param_str = param.ToString().Replace("\\,", ",");
+                            param_str = param_str.Replace(",", "\\,");
+                            str_params += param_str;
+                        }
                     }
-                }
-            str_params = str_params.Replace("\n", indent_replacement);
-            results += str_params;
+                str_params = str_params.Replace("\n", indent_replacement);
+                results += str_params;
+            }
         }
 
         return results;
@@ -113,19 +120,11 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         instruction = instruction.Trim('\t');
 
         //break the instruction into two parts
-        var (funcname, contents) = BreakInstruction(instruction);
-        if (string.IsNullOrEmpty(funcname)) return;
-
-        if (funcname.IndexOf(' ') > -1)
-            throw new ParsingException("Instruction name should not have spacing: " + funcname);
-
-        if (methods.ContainsKey(funcname) == false)
-            throw new ParsingException("Instruction name not found: " + funcname);
-        var method = methods[funcname];
+        var (controls, contents) = BreakInstruction(instruction);
 
         ScriptboundObject.Instruction instructionObj = new ScriptboundObject.Instruction();
-        instructionObj.instructionName = funcname;
         instructionObj.indent = tabCount;
+        var method = BreakInstructionControl(controls, instructionObj, clone, methods);
         if (contents != null) contents = TrimContentIndent(contents, tabCount);
         BreakInstructionContents(contents, instructionObj, clone, method);
         clone.scriptInstructions.Add(instructionObj);
@@ -135,8 +134,30 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     {
         var colonIndex = instruction.IndexOf(':');
         if (colonIndex < 0) return (instruction, null);
-
         return (instruction.Substring(0, colonIndex).Trim(), instruction.Substring(colonIndex + 1).Trim());
+    }
+
+    static List<string> AVAILABLE_CONTROLS = new List<string> { "if" };
+    MethodInfo BreakInstructionControl(string control_str, ScriptboundObject.Instruction instruction, ScriptboundObject clone, Dictionary<string, MethodInfo> methods)
+    {
+        var controls = control_str.Split(new char[0], StringSplitOptions.RemoveEmptyEntries);
+        if (controls.Length <= 0) throw new ParsingException("Instruction name missing");
+        if (controls.Length > 2) throw new ParsingException("Unexpected instruction value: " + controls[2]);
+
+        var control = controls.Length > 1 ? controls[0] : null;
+        var funcname = controls.Length == 1 ? controls[0] : controls[1];
+
+        if (control != null && AVAILABLE_CONTROLS.Contains(control) == false) throw new ParsingException("Instruction control not found: " + control);
+        if (methods.ContainsKey(funcname) == false)
+            throw new ParsingException("Instruction name not found: " + funcname);
+        var method = methods[funcname];
+
+        if (control == "if" && method.ReturnType != typeof(bool)) throw new ParsingException("Instruction control `if` can only apply for instructions that return bool. Current instruction: " + method.Name);
+
+        instruction.controlIf = control == "if";
+        instruction.instructionName = method.Name;
+
+        return method;
     }
     
     void BreakInstructionContents(string contents, ScriptboundObject.Instruction instruction, ScriptboundObject clone, MethodInfo method)

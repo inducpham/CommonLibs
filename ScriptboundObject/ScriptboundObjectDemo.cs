@@ -41,4 +41,5 @@ public class ScriptboundObjectDemo : ScriptboundObject
     {
         Debug.Log(line);
     }
+
 }

@@ -9,7 +9,7 @@ public class ScriptboundObjectDemoRunner : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        demo.DuplicateAndRun();
+        foreach (var i in demo.DuplicateAndIterate()) ;
     }
 
     // Update is called once per frame
