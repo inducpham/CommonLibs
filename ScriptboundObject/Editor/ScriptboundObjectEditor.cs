@@ -11,7 +11,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     private Dictionary<string, MethodInfo> methodReflections;
     private Dictionary<string, string> methodDescriptions;
     private string previewContent;
-    private string previewAPIs;
+    private string previewMethods;
     private string controlName;
     private const int MIN_HEIGHT = 480;
 
@@ -61,7 +61,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 
     void CachePreviewAPIs()
     {
-        previewAPIs = "";
+        previewMethods = "";
         foreach (var key in this.methodReflections.Keys)
         {
             var method = this.methodReflections[key];
@@ -80,9 +80,9 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             if (method.ReturnType != typeof(void))
                 methodInfoStr += " -> <b>" + method.ReturnType.Name + "</b>";
 
-            previewAPIs += methodInfoStr + "\n";
+            previewMethods += methodInfoStr + "\n";
         }
-        previewAPIs = previewAPIs.Substring(0, previewAPIs.Length - 1);
+        previewMethods = previewMethods.Substring(0, previewMethods.Length - 1);
     }
 
     void SwitchToEditMode()
@@ -132,6 +132,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     /// SECTION DRAW API
     static bool api_showing = false;
     static GUIStyle api_style = null;
+    static GUIStyle method_hint_style = null;
     #region DrawAPI
 
     void DrawAPI()
@@ -146,8 +147,14 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         if (api_showing)
         {
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            GUILayout.Label(previewAPIs, api_style);
+            GUILayout.Label(previewMethods, api_style);
             EditorGUILayout.EndVertical();
+        }
+
+        if (method_hint_style == null)
+        {
+            method_hint_style = new GUIStyle(GUI.skin.label);
+            method_hint_style.richText = true;
         }
     }
     #endregion
@@ -197,6 +204,8 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     int editorControlID = -1;
     private int recentControlID;
     static GUIStyle editor_style = null;
+    Vector2 recentTextEditorCursorPos = Vector2.zero;
+    string recentTextEditorFunctionHint = "";
 
     void DrawEditor()
     {
@@ -271,7 +280,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         {
             var bgc = GUI.backgroundColor;
             GUI.backgroundColor = Color.clear;
-            EditorGUILayout.LabelField(" "); //TODO: method hinting here
+            EditorGUILayout.LabelField(recentTextEditorFunctionHint, method_hint_style);
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(MIN_HEIGHT));
             GUI.SetNextControlName(controlName);
             try {
@@ -284,6 +293,11 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         tEditor = typeof(EditorGUI)
             .GetField("activeEditor", BindingFlags.Static | BindingFlags.NonPublic)
             .GetValue(null) as TextEditor;
+        if (tEditor != null && tEditor.graphicalCursorPos != recentTextEditorCursorPos)
+        {
+            recentTextEditorCursorPos = tEditor.graphicalCursorPos;
+            ExtractCurrentLineFunctionHint(tEditor);
+        }
 
         var keyboardControlID = EditorGUIUtility.GetControlID(FocusType.Keyboard);
         if (tEditor != null && tEditor.controlID == keyboardControlID - 1)
@@ -371,6 +385,37 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         //}
 
         EditorGUILayout.EndVertical();
+    }
+
+    private void ExtractCurrentLineFunctionHint(TextEditor te)
+    {
+        var (control, instruction, index, value) = ExtractCurrentLineContext(te);
+        if (methodReflections.ContainsKey(instruction) == false)
+        {
+            recentTextEditorFunctionHint = "";
+            return;
+        }
+
+        var method = methodReflections[instruction];
+        var hint = method.Name + " (";
+        var parameters = method.GetParameters();
+        var i = 0;
+        foreach (var param in parameters)
+        {
+            if (param != parameters[0]) hint += ", ";
+            var param_hint = param.ParameterType.Name + " " + param.Name;
+            if (i == index) param_hint = "<b>" + param_hint + "</b>";
+            hint += param_hint;
+            i++;
+        }
+
+        hint += ")";
+
+        if (method.ReturnType != typeof(void))
+            hint += " -> " + method.ReturnType.Name;
+
+
+        recentTextEditorFunctionHint = hint;
     }
 
     void AutoCompleteEditingContents(TextEditor te, int cursor_index, string content)
