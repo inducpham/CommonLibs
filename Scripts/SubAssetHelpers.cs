@@ -58,9 +58,11 @@ static SubAssetHelpers()
             foreach (var asset in DragAndDrop.objectReferences)
             {
                 var asset_path = AssetDatabase.GetAssetPath(asset);
+                var asset_name = Path.GetFileName(asset_path);
                 AssetDatabase.RemoveObjectFromAsset(asset);
                 AssetDatabase.AddObjectToAsset(asset, path);
                 AssetDatabase.DeleteAsset(asset_path);
+                asset.name = asset_name;
                 AssetDatabase.ImportAsset(asset_path);
             }
             AssetDatabase.ImportAsset(path);
