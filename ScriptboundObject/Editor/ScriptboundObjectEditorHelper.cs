@@ -44,6 +44,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         }
         if (start_index < 0) start_index = 0;
 
+        end_index--;
         while (end_index < text.Length - 1)
         {
             end_index++;
@@ -161,5 +162,26 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         }
 
         return (0, null);
+    }
+
+    private Dictionary<int, Object> mapHashToObject = new Dictionary<int, Object>();
+
+    private string ObjectToString(UnityEngine.Object obj)
+    {
+        if (obj == null) return "none";
+        var hash = obj.GetHashCode();
+        mapHashToObject[hash] = obj;
+        return string.Format("{0}({1})", obj.name, hash);
+    }
+
+    private UnityEngine.Object StringToObject(string str)
+    {
+        var matches = Regex.Matches(str, @"\((\d+)\)");
+        if (matches.Count <= 0) return null;
+        var match = matches[matches.Count - 1];
+        if (match.Success == false) return null;
+        var hash = int.Parse(match.Value.Substring(1, match.Value.Length - 2));
+        if (mapHashToObject.ContainsKey(hash) == false) return null;
+        return mapHashToObject[hash];
     }
 }

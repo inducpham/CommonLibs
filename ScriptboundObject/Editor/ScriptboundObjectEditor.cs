@@ -9,8 +9,9 @@ using System;
 public partial class ScriptboundObjectEditor : UnityEditor.Editor
 {
     private Dictionary<string, MethodInfo> methodReflections;
+    private Dictionary<string, string> methodDescriptions;
     private string previewContent;
-    private string previewAPIs;
+    private string previewMethods;
     private string controlName;
     private const int MIN_HEIGHT = 480;
 
@@ -60,7 +61,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 
     void CachePreviewAPIs()
     {
-        previewAPIs = "";
+        previewMethods = "";
         foreach (var key in this.methodReflections.Keys)
         {
             var method = this.methodReflections[key];
@@ -79,9 +80,9 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             if (method.ReturnType != typeof(void))
                 methodInfoStr += " -> <b>" + method.ReturnType.Name + "</b>";
 
-            previewAPIs += methodInfoStr + "\n";
+            previewMethods += methodInfoStr + "\n";
         }
-        previewAPIs = previewAPIs.Substring(0, previewAPIs.Length - 1);
+        previewMethods = previewMethods.Substring(0, previewMethods.Length - 1);
     }
 
     void SwitchToEditMode()
@@ -131,6 +132,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     /// SECTION DRAW API
     static bool api_showing = false;
     static GUIStyle api_style = null;
+    static GUIStyle method_hint_style = null;
     #region DrawAPI
 
     void DrawAPI()
@@ -145,8 +147,14 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         if (api_showing)
         {
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            GUILayout.Label(previewAPIs, api_style);
+            GUILayout.Label(previewMethods, api_style);
             EditorGUILayout.EndVertical();
+        }
+
+        if (method_hint_style == null)
+        {
+            method_hint_style = new GUIStyle(GUI.skin.label);
+            method_hint_style.richText = true;
         }
     }
     #endregion
@@ -155,7 +163,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     /// SECTION DRAW PREVIEW
     bool preview_showing = true;
     static GUIStyle preview_style = null;
-    Vector2 previewScrollPosition;
+    Vector2 scrollPosition;
     void DrawPreview()
     {
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
@@ -165,8 +173,9 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         GUILayout.FlexibleSpace();
         bool editPressed = GUILayout.Button("Edit", EditorStyles.miniButton);
         EditorGUILayout.EndHorizontal();
+        EditorGUILayout.LabelField(" ");
 
-        previewScrollPosition = EditorGUILayout.BeginScrollView(previewScrollPosition, GUILayout.Height(MIN_HEIGHT));
+        scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(MIN_HEIGHT));
         GUILayout.Label(previewContent, preview_style, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
         GUILayout.FlexibleSpace();
         EditorGUILayout.EndScrollView();
@@ -179,8 +188,6 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             SwitchToEditMode();
     }
 
-    private Vector2 scrollPosition;
-
     ///////////////////////////////////////////////////////////////
     /// SECTION DRAW EDITOR
     string editing_contents = "";
@@ -188,6 +195,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     int hint_cursor_position = -1;
     bool hint_popup_completed = false;
     string hint_result_input = null;
+    UnityEngine.Object hint_result_input_object = null;
     int hint_popup_completed_frameskip = 2;
     Rect recent_text_editor_rect = new Rect();
     Rect hint_rect_position = new Rect();
@@ -196,6 +204,8 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     int editorControlID = -1;
     private int recentControlID;
     static GUIStyle editor_style = null;
+    Vector2 recentTextEditorCursorPos = Vector2.zero;
+    string recentTextEditorFunctionHint = "";
 
     void DrawEditor()
     {
@@ -270,6 +280,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         {
             var bgc = GUI.backgroundColor;
             GUI.backgroundColor = Color.clear;
+            EditorGUILayout.LabelField(recentTextEditorFunctionHint, method_hint_style);
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(MIN_HEIGHT));
             GUI.SetNextControlName(controlName);
             try {
@@ -282,6 +293,11 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         tEditor = typeof(EditorGUI)
             .GetField("activeEditor", BindingFlags.Static | BindingFlags.NonPublic)
             .GetValue(null) as TextEditor;
+        if (tEditor != null && tEditor.graphicalCursorPos != recentTextEditorCursorPos)
+        {
+            recentTextEditorCursorPos = tEditor.graphicalCursorPos;
+            ExtractCurrentLineFunctionHint(tEditor);
+        }
 
         var keyboardControlID = EditorGUIUtility.GetControlID(FocusType.Keyboard);
         if (tEditor != null && tEditor.controlID == keyboardControlID - 1)
@@ -340,13 +356,12 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
                 if (hint_result_input != null)
                 {
                     var hint_result = hint_result_input;
-                    editing_contents = editing_contents.Insert(hint_cursor_position, hint_result);
-                    tEditor.text = editing_contents;
-                    tEditor.cursorIndex += hint_result.Length;
+                    if (hint_result_input_object != null) hint_result = ObjectToString(hint_result_input_object);
+                    AutoCompleteEditingContents(tEditor, hint_cursor_position, hint_result);
                 }
                 tEditor.selectIndex = tEditor.cursorIndex;
-                Repaint();
             }
+            Repaint();
         }
         #endregion
 
@@ -370,17 +385,79 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         //}
 
         EditorGUILayout.EndVertical();
+    }
 
+    private void ExtractCurrentLineFunctionHint(TextEditor te)
+    {
+        var (control, instruction, index, value) = ExtractCurrentLineContext(te);
+        if (methodReflections.ContainsKey(instruction) == false)
+        {
+            recentTextEditorFunctionHint = "";
+            return;
+        }
+
+        var method = methodReflections[instruction];
+        var hint = method.Name + " (";
+        var parameters = method.GetParameters();
+        var i = 0;
+        foreach (var param in parameters)
+        {
+            if (param != parameters[0]) hint += ", ";
+            var param_hint = param.ParameterType.Name + " " + param.Name;
+            if (i == index) param_hint = "<b>" + param_hint + "</b>";
+            hint += param_hint;
+            i++;
+        }
+
+        hint += ")";
+
+        if (method.ReturnType != typeof(void))
+            hint += " -> " + method.ReturnType.Name;
+
+
+        recentTextEditorFunctionHint = hint;
+    }
+
+    void AutoCompleteEditingContents(TextEditor te, int cursor_index, string content)
+    {
+        //take explicit scenario out first
+        if (cursor_index == 0)
+        {
+            editing_contents = editing_contents.Insert(cursor_index, content);
+            te.text = editing_contents;
+            te.cursorIndex += content.Length;
+            return;
+        }
+
+        char starting_char = '?';
+        int start_cursor_index = cursor_index;
+        bool starting_char_break = false;
+
+        do
+        {
+            start_cursor_index--;
+            starting_char = start_cursor_index < 0 ? ' ' : editing_contents[start_cursor_index];
+            starting_char_break = starting_char == ' ' || starting_char == '\n' || starting_char == '\t' || starting_char == ':' || starting_char == ',';
+        }
+        while (start_cursor_index >= 0 && starting_char_break == false);
+
+        start_cursor_index++;
+        var remove_len = cursor_index - start_cursor_index;
+        editing_contents = editing_contents.Remove(start_cursor_index, remove_len);
+        editing_contents = editing_contents.Insert(start_cursor_index, content);
+        te.text = editing_contents;
+        te.cursorIndex += content.Length - remove_len;
     }
 
     void CreateSuggestionPopup(string line_mod, string line_method, int line_index, string line_var)
     {
         //Debug.Log(string.Format("{0} - {1} - {2} - {3}", line_mod, line_method, line_index, line_var));
         hint_result_input = null;
+        hint_result_input_object = null;
 
         ScriptboundObjectEditorHintPopup popup = null;
 
-        if (line_index == -1) popup = new ScriptboundObjectEditorHintPopup(methodReflections, line_var);
+        if (line_index <= -1) popup = new ScriptboundObjectEditorHintPopup(methodReflections, line_var);
         if (line_index >= 0)
         {
             if (line_method == null) return;
@@ -391,7 +468,9 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             var param_type = parameters[line_index].ParameterType;
             if (param_type.IsPrimitive || param_type == typeof(string)) return;
 
-            popup = new ScriptboundObjectEditorHintPopup(parameters[line_index].ParameterType, line_var);
+            if (typeof(UnityEngine.Object).IsAssignableFrom(param_type) && StringToObject(line_var) != null)
+                popup = new ScriptboundObjectEditorHintPopup(param_type, StringToObject(line_var));
+            else popup = new ScriptboundObjectEditorHintPopup(param_type, line_var);
         }
 
         popup.callbackClose += () =>
@@ -401,6 +480,12 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         popup.callbackInput += (result) =>
         {
             hint_result_input = result;
+            hint_popup_completed = true;
+        };
+        popup.callbackInputObject += (str, result) =>
+        {
+            hint_result_input = str;
+            hint_result_input_object = result;
             hint_popup_completed = true;
         };
         PopupWindow.Show(hint_rect_position, popup);

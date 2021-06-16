@@ -12,18 +12,19 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
     struct SearchMatch
     {
         public string searchPath;
-        public string searchValue;
+        public UnityEngine.Object searchValue;
         public int score;
     }
 
     public System.Action callbackClose;
     public System.Action<string> callbackInput;
+    public System.Action<string, UnityEngine.Object> callbackInputObject;
 
     string textInput = "";
     System.Type hintType;
     private AutocompleteSearchField autocompleteSearchField;
     List<string> searchPaths;
-    Dictionary<string, string> mapSearchValues = new Dictionary<string, string>();
+    Dictionary<string, UnityEngine.Object> mapSearchObject = new Dictionary<string, UnityEngine.Object>();
     List<SearchMatch> matches;
 
     public ScriptboundObjectEditorHintPopup(List<string> available_options, string existing_value = null)
@@ -36,7 +37,22 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
         Setup(new List<string>(methodReflections.Keys), existing_value);
     }
 
+    public ScriptboundObjectEditorHintPopup(System.Type hintType, UnityEngine.Object obj = null)
+    {
+        if (obj == null) HintTypeConstructor(hintType);
+        else
+        {
+            var existing_value = AssetDatabase.GetAssetPath(obj) + ":" + obj.name;
+            HintTypeConstructor(hintType, existing_value);
+        }
+    }
+
     public ScriptboundObjectEditorHintPopup(System.Type hintType, string existing_value = null)
+    {
+        HintTypeConstructor(hintType, existing_value);
+    }
+    
+    void HintTypeConstructor(System.Type hintType, string existing_value = null)
     {
         this.hintType = hintType;
         var type = hintType;
@@ -49,9 +65,23 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
         }
         else
         {
-            options = new List<string>();
+            var uids = AssetDatabase.FindAssets("t:" + hintType.Name);
+            foreach (var uid in uids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(uid);
+                var objs = AssetDatabase.LoadAllAssetsAtPath(path);
+                foreach (var obj in objs)
+                {
+                    if (hintType.IsAssignableFrom(obj.GetType()))
+                    {
+                        var p = path + ":" + obj.name;
+                        options.Add(p);
+                        mapSearchObject[p] = obj;
+                    }
+                }
+            }
             //options = new List<string>(AssetDatabase.GetAllAssetPaths());
-            //options.RemoveAll((s) => s.StartsWith("Assets") == false);
+            options.RemoveAll((s) => s.StartsWith("Assets") == false);
         }
 
         Setup(options, existing_value);
@@ -95,7 +125,7 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
                     matches.Add(new SearchMatch()
                     {
                         searchPath = searchPath,
-                        searchValue = mapSearchValues.ContainsKey(searchPath) ? mapSearchValues[searchPath] : null,
+                        searchValue = mapSearchObject.ContainsKey(searchPath) ? mapSearchObject[searchPath] : null,
                         score = score
                     });
                     count++;
@@ -105,24 +135,29 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
 
             matches.Sort((m1, m2) => m2.score.CompareTo(m1.score));
             for (var i = 0; i < Mathf.Min(matches.Count, autocompleteSearchField.maxResults); i++)
-                autocompleteSearchField.AddResult(matches[i].searchPath, matches[i].searchValue);
+                autocompleteSearchField.AddResult(matches[i].searchPath, null);
         } else
         {
             int count = 0;
             foreach (var searchPath in searchPaths)
             {
-                autocompleteSearchField.AddResult(searchPath, mapSearchValues.ContainsKey(searchPath) ? mapSearchValues[searchPath] : null);
+                autocompleteSearchField.AddResult(searchPath, null);
                 count++;
                 if (count > 20) break;
             }
         }
     }
 
-    void OnConfirm(string searchResult, string result)
+    void OnConfirm(string searchResult, string altResult)
     {
-    if (result == null) result = searchResult;
-    this.callbackInput?.Invoke(result);
-    this.editorWindow.Close();
+        var objResult = mapSearchObject.ContainsKey(searchResult) ? mapSearchObject[searchResult] : null;
+
+        if (objResult != null) this.callbackInputObject?.Invoke(searchResult, objResult);
+        else this.callbackInput?.Invoke(searchResult);
+
+        //if (altResult == null) altResult = searchResult;
+        //this.callbackInput?.Invoke(altResult);
+        this.editorWindow.Close();
     }
     #endregion
 
@@ -193,7 +228,7 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
         List<string> results = new List<string>();
 
         [SerializeField]
-        int selectedIndex = -1;
+        int selectedIndex = 0;
 
         SearchField searchField;
 
