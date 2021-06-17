@@ -21,7 +21,7 @@ namespace InstructionSetEditor {
             style.fontSize = 11;
             style.richText = true;
             style.padding = new RectOffset(6, 6, 6, 6);
-            style.normal.textColor = new Color(0.2f, 0.2f, 0.2f); // Color.black;
+            //style.normal.textColor = new Color(0.2f, 0.2f, 0.2f); // Color.black;
             return style;
         }
 
