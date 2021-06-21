@@ -27,6 +27,21 @@ public class ImageCacheSettingsEditor : UnityEditor.Editor
         Selection.activeObject = settings;
     }
 
+    [MenuItem("Tools/Remove duplicated pngs")]
+    public static void RemoveDuplicatedPNGs()
+    {
+        var paths = new List<string>(AssetDatabase.GetAllAssetPaths());
+        foreach (var path in paths)
+        {
+            if (path.EndsWith(".jpg"))
+            {
+                var png_path = path.Substring(0, path.Length - 4) + ".png";
+                if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(png_path) != null)
+                    AssetDatabase.DeleteAsset(png_path);
+            }
+        }
+    }
+
     public override void OnInspectorGUI()
     {
         if (GUILayout.Button("Cache images")) CacheImages();
