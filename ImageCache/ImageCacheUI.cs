@@ -18,8 +18,8 @@ public class ImageCacheUI : MonoBehaviour
     Sprite GetCurrentSprite()
     {
         if (image == null) image = GetComponent<Image>();
-        var sprite = image.sprite;
-        return sprite;
+        if (image.overrideSprite != null) return image.overrideSprite;
+        return image.sprite;
     }
     Sprite CurrentSprite => GetCurrentSprite();
 
@@ -28,11 +28,20 @@ public class ImageCacheUI : MonoBehaviour
         if (CurrentSprite == cachedSprite || CurrentSprite == sourceSprite) return;
 
         this.sourceSprite = CurrentSprite;
-        if (this.sourceSprite == null) image.sprite = null;
+        if (this.sourceSprite == null)
+        {
+            if (image.overrideSprite != null) image.overrideSprite = this.cachedSprite;
+            else image.sprite = null;
+        }
         else
         {
             this.cachedSprite = ImageCacheSettings.Instance.CreateSpriteFromCache(this.sourceSprite);
-            if (this.cachedSprite != null) image.sprite = this.cachedSprite;
+            if (this.cachedSprite != null)
+            {
+                this.sourceSprite = this.cachedSprite;
+                if (image.overrideSprite != null) image.overrideSprite = this.cachedSprite;
+                else image.sprite = this.cachedSprite;
+            }
         }
     }
 }

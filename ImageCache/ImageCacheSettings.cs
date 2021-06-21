@@ -12,7 +12,6 @@ public class ImageCacheSettings : ScriptableObject
         if (instance != null) return instance;
 
         var objs = Resources.FindObjectsOfTypeAll<ImageCacheSettings>();
-        Debug.Log(objs.Length);
         if (objs.Length <= 0) return null;
 
         instance = objs[0];

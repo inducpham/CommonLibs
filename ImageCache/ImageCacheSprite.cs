@@ -32,7 +32,11 @@ public class ImageCacheSprite : MonoBehaviour
         else
         {
             this.cachedSprite = ImageCacheSettings.Instance.CreateSpriteFromCache(this.sourceSprite);
-            if (this.cachedSprite != null) spriteRenderer.sprite = this.cachedSprite;
+            if (this.cachedSprite != null)
+            {
+                this.sourceSprite = this.cachedSprite;
+                spriteRenderer.sprite = this.cachedSprite;
+            }
         }
     }
 }
