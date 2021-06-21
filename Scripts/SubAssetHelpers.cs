@@ -59,6 +59,8 @@ static SubAssetHelpers()
             {
                 var asset_path = AssetDatabase.GetAssetPath(asset);
                 var asset_name = Path.GetFileName(asset_path);
+                if (asset_name.ToLower().EndsWith(".asset"))
+                    asset_name = asset_name.Substring(0, asset_name.Length - 6);
                 AssetDatabase.RemoveObjectFromAsset(asset);
                 AssetDatabase.AddObjectToAsset(asset, path);
                 AssetDatabase.DeleteAsset(asset_path);
