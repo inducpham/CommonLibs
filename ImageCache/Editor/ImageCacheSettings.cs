@@ -65,7 +65,7 @@ public class ImageCacheSettingsEditor : UnityEditor.Editor
         EditorUtility.SetDirty(importer);
         importer.SaveAndReimport();
 
-        var clone_path = "Assets/Resources/ImageCache/" + AssetDatabase.GUIDFromAssetPath(path) + ".bytes";
+        var clone_path = "Assets/Resources/ImageCache/" + AssetDatabase.AssetPathToGUID(path) + ".bytes";
         AssetDatabase.CopyAsset(path, clone_path);
         ((ImageCacheSettings)target).mapItems.Add(new ImageCacheSettings.MapItem()
         {
