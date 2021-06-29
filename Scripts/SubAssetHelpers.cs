@@ -12,10 +12,9 @@ public class SubAssetHelpers : Editor
 
     static List<Type> SUB_ASSET_TYPES = new List<Type>() { typeof(ScriptableObject), typeof(AnimationClip) };
 
-static SubAssetHelpers()
+    static SubAssetHelpers()
     {
         EditorApplication.projectWindowItemOnGUI += new EditorApplication.ProjectWindowItemCallback(Callback);
-
     }
 
     static void Callback(string path, Rect rect)
@@ -86,26 +85,36 @@ static SubAssetHelpers()
         else
             assets.AddRange(Selection.objects);
 
+        assets.Remove(host_object);
+        assets.RemoveAll((a) => AssetDatabase.IsSubAsset(a) == false);
+        var new_paths = new List<string>();
+
         foreach (var asset in assets)
         {
-            if (asset == host_object) continue;
-            try
-            {
-                AssetDatabase.RemoveObjectFromAsset(asset);
+            AssetDatabase.RemoveObjectFromAsset(asset);
+            var ext = "asset";
+            if (asset is AnimationClip) ext = "anim";
+            if (asset is RuntimeAnimatorController) ext = "controller";
 
-                var ext = "asset";
-                if (asset is AnimationClip) ext = "anim";
-                if (asset is RuntimeAnimatorController) ext = "controller";
-
-                var path = folder_path + "/" + asset.name + "." + ext;
-                AssetDatabase.CreateAsset(asset, path);
-                AssetDatabase.ImportAsset(path);
-            } catch
-            {
-            }
+            var path = folder_path + "/" + asset.name + "." + ext;
+            new_paths.Add(path);
         }
 
+        EditorApplication.delayCall += () => ReaddAssets(assets, new_paths);
+
+        AssetDatabase.SaveAssets();
         AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(host_object));
+    }
+
+    static void ReaddAssets(List<UnityEngine.Object> assets, List<string> new_paths)
+    {
+        for (var i = 0; i < assets.Count; i++)
+        {
+            var asset = assets[i];
+            var path = new_paths[i];
+            AssetDatabase.CreateAsset(asset, path);
+            AssetDatabase.ImportAsset(path);
+        }
     }
 
     [MenuItem("Assets/Unpack from subassets", priority = 20, validate = true)]
