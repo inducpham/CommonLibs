@@ -68,6 +68,18 @@ namespace ScriptableObjectBrowser
             AssetDatabase.ImportAsset(path);
         }
 
+        protected void ReimportAsset(ScriptableObject o)
+        {
+            var path = AssetDatabase.GetAssetPath(o);
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+        }
+
+        protected void Ping(UnityEngine.Object o)
+        {
+            UnityEditor.EditorGUIUtility.PingObject(o);
+        }
+
+
         protected GameObject CreatePrefab(string path, Action<GameObject> onPrefabCreated = null)
         {
             if (path.EndsWith(".prefab") == false) path += ".prefab";

@@ -72,6 +72,7 @@ public class ArraySheetEditorDrawer : PropertyDrawer
         var width = 0;
         var counter = property.Copy();
         counter.Next(true);
+        
         while (counter.depth > depth)
         {
             if (counter.depth == depth + 1 && ValidateProp(counter))
@@ -80,7 +81,7 @@ public class ArraySheetEditorDrawer : PropertyDrawer
                 width += 1;
                 weights[x] = x < attribute.widths.Length ? attribute.widths[x] : GetDefaultWidthWeight(counter);
             }
-            counter.Next(true);
+            if (counter.Next(true) == false) break;
         }
 
         float total_width = 0;
@@ -141,7 +142,7 @@ public class ArraySheetEditorDrawer : PropertyDrawer
                     current_cell.x += current_cell.width;
                     x += 1;
                 }
-                counter.Next(true);
+                if (counter.Next(true) == false) break;
             }
             cell.y += EditorGUIUtility.singleLineHeight;
         }
