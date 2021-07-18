@@ -645,7 +645,7 @@ namespace ScriptableObjectBrowser
             r.x += 32;
             r.width = BROWSE_AREA_WIDTH - 34;
             r.height = 18;
-            PopupWindow.Show(r, new CreateNewEntryPopup(r, FinishRenameCurrentEntry));
+            PopupWindow.Show(r, new CreateNewEntryPopup(r, currentObject.name, FinishRenameCurrentEntry));
         }
 
         void FinishRenameCurrentEntry(string newName)
@@ -675,19 +675,20 @@ namespace ScriptableObjectBrowser
             r.x += 32;
             r.width = BROWSE_AREA_WIDTH - 34;
             r.height = 18;
-            PopupWindow.Show(r, new CreateNewEntryPopup(r, FinishCreateNewEntry));
+            PopupWindow.Show(r, new CreateNewEntryPopup(r, "", FinishCreateNewEntry));
         }
 
         #region Create new entry popup
         class CreateNewEntryPopup : PopupWindowContent
         {
             Rect position;
-            string filename = "";
+            string entryValue = "";
             bool err = false;
             System.Action<string> callback;
 
-            public CreateNewEntryPopup(Rect r, System.Action<string> callback)
+            public CreateNewEntryPopup(Rect r, string currentEntryValue, System.Action<string> callback)
             {
+                entryValue = currentEntryValue;
                 this.position = r;
                 this.callback = callback;
             }
@@ -699,6 +700,8 @@ namespace ScriptableObjectBrowser
                 return size;
             }
 
+            bool autoFocus = true;
+
             public override void OnGUI(Rect rect)
             {
                 this.editorWindow.position = position;
@@ -707,8 +710,13 @@ namespace ScriptableObjectBrowser
                 rect.x = rect.y = 0;
                 rect.height = 18;
                 GUI.SetNextControlName("Name");
-                filename = EditorGUI.TextField(rect, filename);
+                entryValue = EditorGUI.TextField(rect, entryValue);
                 GUI.FocusControl("Name");
+                if (autoFocus)
+                {
+                    if (entryValue.Length > 0) EditorGUI.FocusTextInControl("Name");
+                    autoFocus = false;
+                }
 
                 if (err)
                 {
@@ -723,7 +731,7 @@ namespace ScriptableObjectBrowser
             {
                 if (this.err) return;
                 this.editorWindow.Close();
-                this.callback?.Invoke(this.filename);
+                this.callback?.Invoke(this.entryValue);
             }
         }
         #endregion
