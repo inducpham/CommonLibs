@@ -330,7 +330,11 @@ namespace InstructionSetEditor
                 if (typeof(IList).IsAssignableFrom(type))
                 {
                     var list = (IList)field.GetValue(instructionSet);
-                    if (list == null) list = (IList) Activator.CreateInstance(type);
+                    if (list == null)
+                    {
+                        list = (IList)Activator.CreateInstance(type);
+                        field.SetValue(instructionSet, list);
+                    }
                     results[field.Name] = list;
                 }
             }
