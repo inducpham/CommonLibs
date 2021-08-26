@@ -27,12 +27,18 @@ public class BinaryJSONSerializer : MonoBehaviour
     public static void WriteToFile(string seed, string path, System.Object obj)
     {
         path = Path.Combine(Application.persistentDataPath, path);
+        WriteToFileAbsolutePath(seed, path, obj);
+    }
+
+    public static void WriteToFileAbsolutePath(string seed, string path, System.Object obj)
+    {
+        path = Path.Combine(Application.persistentDataPath, path);
         var content = Newtonsoft.Json.JsonConvert.SerializeObject(obj);
         var seedbytes = StringToBytes(seed + SEED);
         var seedlen = seedbytes.Length;
         var contentbytes = StringToBytes(content);
         for (var i = 0; i < contentbytes.Length; i++)
-            contentbytes[i] = (byte) (contentbytes[i] + seedbytes[i % seedlen]);
+            contentbytes[i] = (byte)(contentbytes[i] + seedbytes[i % seedlen]);
         System.IO.File.WriteAllBytes(path, contentbytes);
     }
 
@@ -49,17 +55,23 @@ public class BinaryJSONSerializer : MonoBehaviour
             return default(T);
         }
 
+        return ReadFromBytes<T>(seed, contentbytes);
+    }
+
+    public static T ReadFromBytes<T>(string seed, Byte[] bytes)
+    {
         var seedbytes = StringToBytes(seed + SEED);
         var seedlen = seedbytes.Length;
-        for (var i = 0; i < contentbytes.Length; i++)
-            contentbytes[i] = (byte)(contentbytes[i] - seedbytes[i % seedlen]);
+        for (var i = 0; i < bytes.Length; i++)
+            bytes[i] = (byte)(bytes[i] - seedbytes[i % seedlen]);
 
-        string content = BytesToString(contentbytes);
+        string content = BytesToString(bytes);
         try
         {
             T result = Newtonsoft.Json.JsonConvert.DeserializeObject<T>(content);
             return result;
-        } catch
+        }
+        catch
         {
             return default(T);
         }

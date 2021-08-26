@@ -22,13 +22,13 @@ MonoBehaviour:
   - instructionName: Increment
     parameters: []
     indent: 0
-    controlif: 0
-    controlloop: 0
+    controlIf: 0
+    controlLoop: 0
   - instructionName: Increment
     parameters: []
     indent: 0
-    controlif: 0
-    controlloop: 0
+    controlIf: 0
+    controlLoop: 0
   - instructionName: Hello
     parameters:
     - type: 4
@@ -36,6 +36,6 @@ MonoBehaviour:
     - type: 0
       valueIndex: 0
     indent: 0
-    controlif: 0
-    controlloop: 0
+    controlIf: 0
+    controlLoop: 0
   val: 0
