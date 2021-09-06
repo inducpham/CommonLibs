@@ -92,14 +92,31 @@ public class ScriptboundObject : ScriptableObject
         foreach (var instruction in IterateInstance()) ;
     }
 
+    private Dictionary<string, MethodInfo> mapMethods;
+    private string defaultStringMethod;
+    private int recentInstructionIndex;
+
+    void ExtractMapInstructions()
+    {
+        if (this.mapMethods != null) return;
+        this.mapMethods = ExtractMethodReflections();
+        foreach (var method in mapMethods.Values)
+        {
+            var prmts = method.GetParameters();
+            if (prmts.Length != 1 || prmts[0].ParameterType != typeof(string)) continue;
+            if (method.GetCustomAttribute(typeof(ScriptboundObject.Default), true) == null) continue;
+            defaultStringMethod = method.Name;
+        }
+
+    }
+
     public IEnumerable<Instruction> IterateInstance()
     {
         // create the loop counts
         var loop_counts = new List<int>(scriptInstructions.Count);
         for (var i = 0; i < scriptInstructions.Count; i++) loop_counts.Add(0);
 
-        // map the instruction name to 
-        var mapMethods = ExtractMethodReflections();
+        ExtractMapInstructions();
 
         // register the instruction index
         var previous_instruction_index = -1;
@@ -116,30 +133,45 @@ public class ScriptboundObject : ScriptableObject
 
             var current_instruction = scriptInstructions[current_instruction_index];
             var success = true;
+
             if (mapMethods.ContainsKey(current_instruction.instructionName))
             {
                 var method = mapMethods[current_instruction.instructionName];
                 var parameters = ExtractParameters(method, current_instruction);
+                recentInstructionIndex = current_instruction_index;
+                
+                //if (current_instruction.parameters.Count > 0 && current_instruction.parameters[0].type == Instruction.ParamType.OBJECT) parameters[0] = null;
                 var result = method.Invoke(this, parameters);
 
                 if (current_instruction.controlIf && method.ReturnType == typeof(bool)) success = (bool)result;
                 yield return current_instruction;
             }
+            
 
             // move on to the next instruction here
             // TODO: check for indentation
             previous_instruction_index = current_instruction_index;
-            if (current_instruction.controlIf && success && current_instruction.instructionChild >= 0)
+
+            if (skipInstructionEntrance)
+            {
+                current_instruction_index = current_instruction.instructionNext;
+                skipInstructionEntrance = false;
+                continue;
+            }
+
+            if (current_instruction.controlIf == false && current_instruction.instructionChild >= 0)
+                current_instruction_index = current_instruction.instructionChild;
+            else if (current_instruction.controlIf && success && current_instruction.instructionChild >= 0)
                 current_instruction_index = current_instruction.instructionChild;
             else
                 current_instruction_index = current_instruction.instructionNext;
         }
     }
 
-    public object[] ExtractParameters(MethodInfo method, Instruction current_instruction)
+    public System.Object[] ExtractParameters(MethodInfo method, Instruction current_instruction)
     {
         var parameterFields = method.GetParameters();
-        var results = new object[parameterFields.Length];
+        var results = new System.Object[parameterFields.Length];
         var count = Mathf.Min(parameterFields.Length, current_instruction.parameters.Count);
 
         for (var i = 0; i < count; i++)
@@ -153,12 +185,18 @@ public class ScriptboundObject : ScriptableObject
                 case Instruction.ParamType.FLOAT: val = scriptFloatValues[param.valueIndex]; break;
                 case Instruction.ParamType.BOOL: val = scriptBoolValues[param.valueIndex]; break;
                 case Instruction.ParamType.ENUM: val = System.Enum.ToObject(parameterFields[i].ParameterType, scriptIntValues[param.valueIndex]); break;
-                case Instruction.ParamType.OBJECT: val = scriptObjectValues[param.valueIndex]; break;
+                case Instruction.ParamType.OBJECT:
+                    val = scriptObjectValues[param.valueIndex];
+                    UnityEngine.Object o = (UnityEngine.Object)val;
+                    if (o == null) val = null;
+                    break;
             }
 
             results[i] = val;
         }
 
+        for (var i = 0; i < results.Length; i++)
+            if (results[i] == null) results[i] = null;
         return results;
     }
 
@@ -169,6 +207,7 @@ public class ScriptboundObject : ScriptableObject
         var methods = this.GetType().GetMethods(bindingAttrs);
         foreach (var method in methods)
         {
+            if (method.IsSpecialName) continue;
             if (method.DeclaringType == typeof(System.Object)) continue;
             if (method.DeclaringType == typeof(UnityEngine.Object)) continue;
             if (method.DeclaringType == typeof(UnityEngine.ScriptableObject)) continue;
@@ -183,4 +222,27 @@ public class ScriptboundObject : ScriptableObject
     {
         return " ";
     }
+
+    protected bool skipInstructionEntrance = false;
+    protected List<string> CollectChildrenDefaultStringEntries()
+    {
+        var results = new List<string>();
+        if (defaultStringMethod == null) return results;
+
+        var currentInstruction = scriptInstructions[recentInstructionIndex];
+        for (var i = recentInstructionIndex + 1; i < scriptInstructions.Count; i++)
+        {
+            var instruction = scriptInstructions[i];
+            if (instruction.indent <= currentInstruction.indent) break;
+            if (instruction.instructionName != defaultStringMethod || instruction.indent != currentInstruction.indent + 1) continue;
+            if (instruction.parameters.Count != 1 || instruction.parameters[0].type != Instruction.ParamType.STRING) continue;
+            var string_value_index = instruction.parameters[0].valueIndex;
+            results.Add(scriptStringValues[string_value_index]);
+        }
+
+        return results;
+    }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    public class Default : System.Attribute { }
 }

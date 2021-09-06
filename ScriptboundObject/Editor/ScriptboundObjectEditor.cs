@@ -10,6 +10,8 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 {
     private Dictionary<string, MethodInfo> methodReflections;
     private Dictionary<string, string> methodDescriptions;
+    private string defaultStringMethod = null;
+
     private string previewContent;
     private string previewMethods;
     private string controlName;
@@ -20,9 +22,23 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     private void OnEnable()
     {
         this.methodReflections = Target.ExtractMethodReflections();
+        CheckForDefaultStringMethod();
         CachePreviewAPIs();
         CachePreviewContents();
         controlName = Target.GetHashCode().ToString();
+    }
+
+    void CheckForDefaultStringMethod()
+    {
+        defaultStringMethod = null;
+        foreach (var method in this.methodReflections.Values)
+        {
+            var prmts = method.GetParameters();
+            if (prmts.Length != 1 || prmts[0].ParameterType != typeof(string)) continue;
+            if (method.GetCustomAttribute(typeof(ScriptboundObject.Default), true) == null) continue;
+
+            defaultStringMethod = method.Name;
+        }
     }
 
     public override void OnInspectorGUI()
@@ -174,6 +190,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         bool editPressed = GUILayout.Button("Edit", EditorStyles.miniButton);
         EditorGUILayout.EndHorizontal();
         EditorGUILayout.LabelField(" ");
+        EditorGUILayout.LabelField(" ");
 
         scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(MIN_HEIGHT));
         GUILayout.Label(previewContent, preview_style, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
@@ -197,7 +214,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     string hint_result_input = null;
     UnityEngine.Object hint_result_input_object = null;
     int hint_popup_completed_frameskip = 2;
-    Rect recent_text_editor_rect = new Rect();
+    Rect recent_editor_scrol_rect = new Rect();
     Rect hint_rect_position = new Rect();
     Vector2 recent_hint_cursor_position;
     private FieldInfo cachedSelectAllField;
@@ -206,6 +223,9 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     static GUIStyle editor_style = null;
     Vector2 recentTextEditorCursorPos = Vector2.zero;
     string recentTextEditorFunctionHint = "";
+    string recentTextEditorObjectHint = "";
+
+    Rect recent_editor_rect = new Rect();
 
     void DrawEditor()
     {
@@ -247,9 +267,8 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         if (hint_popup == false)
             if (undo || hinting || entering)
             {
-                #pragma warning disable
+                if (Event.current.type == EventType.Layout) return;
                 Event.current.Use();
-                #pragma warning restore
             }
 
         #region Block input and update hinting
@@ -279,16 +298,26 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 
         {
             var bgc = GUI.backgroundColor;
-            GUI.backgroundColor = Color.clear;
-            EditorGUILayout.LabelField(recentTextEditorFunctionHint, method_hint_style);
-            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(MIN_HEIGHT));
+            try
+            {
+                EditorGUILayout.LabelField(recentTextEditorFunctionHint, method_hint_style);
+                EditorGUILayout.LabelField(recentTextEditorObjectHint, method_hint_style);
+                scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(MIN_HEIGHT));
+            }
+            catch { }
             GUI.SetNextControlName(controlName);
-            try {
-                editing_contents = EditorGUILayout.TextArea(editing_contents, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+            try
+            {
+                GUI.backgroundColor = Color.clear;
+                if (recent_editor_rect.height < MIN_HEIGHT + 1)
+                    editing_contents = EditorGUILayout.TextArea(editing_contents, GUILayout.ExpandWidth(true), GUILayout.MinHeight(MIN_HEIGHT));
+                else
+                    editing_contents = EditorGUILayout.TextArea(editing_contents, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+                if (Event.current.type == EventType.Repaint) recent_editor_rect = GUILayoutUtility.GetLastRect();
+                GUI.backgroundColor = bgc;
                 GUILayout.FlexibleSpace();
             } catch { }
             EditorGUILayout.EndScrollView();
-            GUI.backgroundColor = bgc;
         }
         tEditor = typeof(EditorGUI)
             .GetField("activeEditor", BindingFlags.Static | BindingFlags.NonPublic)
@@ -296,7 +325,9 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         if (tEditor != null && tEditor.graphicalCursorPos != recentTextEditorCursorPos)
         {
             recentTextEditorCursorPos = tEditor.graphicalCursorPos;
+            UpdateCursorScroll();
             ExtractCurrentLineFunctionHint(tEditor);
+            ExtractCurrentLineObjectHint(tEditor);
         }
 
         var keyboardControlID = EditorGUIUtility.GetControlID(FocusType.Keyboard);
@@ -307,7 +338,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             if (tEditor.text != editing_contents) editing_contents = tEditor.text;
         }
 
-        if (Event.current.type == EventType.Repaint) recent_text_editor_rect = GUILayoutUtility.GetLastRect();
+        if (Event.current.type == EventType.Repaint) recent_editor_scrol_rect = GUILayoutUtility.GetLastRect();
         #endregion
 
         //enable hints here
@@ -318,7 +349,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             hint_popup = true;
             hint_popup_completed = false;
             hint_cursor_position = tEditor.cursorIndex;
-            hint_rect_position = recent_text_editor_rect;
+            hint_rect_position = recent_editor_scrol_rect;
             hint_rect_position.y = 0;
             hint_rect_position.min += tEditor.graphicalCursorPos - tEditor.scrollOffset;
             hint_rect_position.width = 100;
@@ -387,10 +418,25 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         EditorGUILayout.EndVertical();
     }
 
+    private void UpdateCursorScroll()
+    {
+        var r = recent_editor_scrol_rect;
+        var cursor = recentTextEditorCursorPos;
+        var scroll = scrollPosition;
+
+        if (cursor.y - scroll.y < 0) scroll.y = cursor.y;
+        if (cursor.y - scroll.y + 32 > r.height) scroll.y = cursor.y + 32 - r.height;
+        if (cursor.x - scroll.x < 0) scroll.x = cursor.x;
+        if (cursor.x - scroll.x + 32 > r.width) scroll.x = cursor.x + 32 - r.width;
+
+        scrollPosition = scroll;
+    }
+
+    bool hintingObjectField = false;
     private void ExtractCurrentLineFunctionHint(TextEditor te)
     {
         var (control, instruction, index, value) = ExtractCurrentLineContext(te);
-        if (methodReflections.ContainsKey(instruction) == false)
+        if (instruction == null || methodReflections.ContainsKey(instruction) == false)
         {
             recentTextEditorFunctionHint = "";
             return;
@@ -400,11 +446,13 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         var hint = method.Name + " (";
         var parameters = method.GetParameters();
         var i = 0;
+        var hinting_object = false;
         foreach (var param in parameters)
         {
             if (param != parameters[0]) hint += ", ";
             var param_hint = param.ParameterType.Name + " " + param.Name;
             if (i == index) param_hint = "<b>" + param_hint + "</b>";
+            if (i == index && (typeof(UnityEngine.Object).IsAssignableFrom(parameters[i].ParameterType) || typeof(UnityEngine.MonoBehaviour).IsAssignableFrom(parameters[i].ParameterType))) hinting_object = true;
             hint += param_hint;
             i++;
         }
@@ -414,8 +462,27 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         if (method.ReturnType != typeof(void))
             hint += " -> " + method.ReturnType.Name;
 
-
+        hintingObjectField = hinting_object;
         recentTextEditorFunctionHint = hint;
+    }
+
+    private void ExtractCurrentLineObjectHint(TextEditor te)
+    {
+        if (hintingObjectField == false)
+        {
+            recentTextEditorObjectHint = "";
+            return;
+        }
+
+        var o = StringToObject(ExtractCurrentField(te));
+        if (o == null)
+        {
+            recentTextEditorObjectHint = "";
+            return;
+        }
+
+
+        recentTextEditorObjectHint = AssetDatabase.GetAssetPath(o) + ":" + o.ToString();
     }
 
     void AutoCompleteEditingContents(TextEditor te, int cursor_index, string content)

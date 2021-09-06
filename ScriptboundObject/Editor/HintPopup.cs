@@ -63,7 +63,21 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
             var names = System.Enum.GetNames(type);
             options = new List<string>(names);
         }
-        else
+        else if (typeof(MonoBehaviour).IsAssignableFrom(hintType))
+        {
+            var uids = AssetDatabase.FindAssets("t: GameObject");
+            foreach (var uid in uids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(uid);
+                var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                var co = go.GetComponent(hintType);
+                if (co == null) continue;
+
+                var p = path + ":" + go.name;
+                options.Add(p);
+                mapSearchObject[p] = co;
+            }
+        } else
         {
             var uids = AssetDatabase.FindAssets("t:" + hintType.Name);
             foreach (var uid in uids)

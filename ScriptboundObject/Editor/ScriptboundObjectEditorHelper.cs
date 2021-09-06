@@ -7,6 +7,44 @@ using System.Text.RegularExpressions;
 
 public partial class ScriptboundObjectEditor : UnityEditor.Editor
 {
+
+    private string ExtractCurrentField(TextEditor te)
+    {
+        #region Extract the current line
+        var text = te.text;
+        var index = te.cursorIndex;
+
+        var start_index = index;
+        var end_index = index;
+
+        while (start_index > 0)
+        {
+            start_index--;
+            var c = text[start_index];
+            if (c == '\n' || c == ',' || c == ':')
+            {
+                start_index++;
+                break;
+            }
+        }
+
+        end_index--;
+        while (end_index < text.Length - 1)
+        {
+            end_index++;
+            var c = text[end_index];
+            if (c == '\n' || c == ',')
+            {
+                end_index--;
+                break;
+            }
+        }
+        var contents = text.Substring(start_index, end_index - start_index + 1);
+        #endregion
+
+        return contents.Trim();
+    }
+
     private string TrimContentIndent(string contents, int indent)
     {
         var src = "\n";

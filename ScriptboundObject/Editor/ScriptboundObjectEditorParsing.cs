@@ -24,6 +24,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 
     private string ScriptboundObjectToString(ScriptboundObject target, bool highlight = false)
     {
+        if (target.scriptInstructions == null) target.scriptInstructions = new List<ScriptboundObject.Instruction>();
         var results = "";
         var instructions = target.scriptInstructions;
         var instructionParsedCount = 0;
@@ -48,17 +49,22 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             if (instruction.controlIf) control += "if ";
             control += instruction.instructionName;
 
-            if (method.GetParameters().Length <= 0) results += string.Format(highlight ? "<b>{0}</b>" : "{0}", control);
-            else results += string.Format(highlight ? "<b>{0}:</b>" : "{0}:", control);
+            if (method.Name == this.defaultStringMethod) { }
+            else {
+                if (method.GetParameters().Length <= 0) results += string.Format(highlight ? "<b>{0}</b>" : "{0}", control);
+                else results += string.Format(highlight ? "<b>{0}: </b>" : "{0}: ", control);
+            }
 
             if (method.GetParameters().Length > 0)
             {
                 var parameters = Target.ExtractParameters(method, instruction);
 
-                string str_params = " ";
+                string str_params = "";
 
-                if (parameters.Length == 1 && instruction.parameters[0].type == ScriptboundObject.Instruction.ParamType.STRING)
+                if (parameters.Length == 1 && instruction.parameters[0].type == ScriptboundObject.Instruction.ParamType.STRING && parameters[0] != null)
+                {
                     str_params += parameters[0].ToString();
+                }
                 else
                     for (var i = 0; i < instruction.parameters.Count; i++)
                     {
@@ -124,9 +130,22 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 
         ScriptboundObject.Instruction instructionObj = new ScriptboundObject.Instruction();
         instructionObj.indent = tabCount;
-        var method = BreakInstructionControl(controls, instructionObj, clone, methods);
-        if (contents != null) contents = TrimContentIndent(contents, tabCount);
-        BreakInstructionContents(contents, instructionObj, clone, method);
+
+        try
+        {
+            var method = BreakInstructionControl(controls, instructionObj, clone, methods);
+            if (contents != null) contents = TrimContentIndent(contents, tabCount);
+            BreakInstructionContents(contents, instructionObj, clone, method);
+        } catch (ParsingException e)
+        {
+            if (defaultStringMethod != null)
+            {
+                instructionObj.instructionName = defaultStringMethod;
+                instructionObj.parameters = new List<ScriptboundObject.Instruction.Parameter>();
+                ExtractInstructionParam(TrimContentIndent(instruction, tabCount), instructionObj, clone, typeof(string));
+            }
+            else throw e;
+        }
         clone.scriptInstructions.Add(instructionObj);
     }
 
@@ -159,7 +178,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 
         return method;
     }
-    
+
     void BreakInstructionContents(string contents, ScriptboundObject.Instruction instruction, ScriptboundObject clone, MethodInfo method)
     {
         var parameters = method.GetParameters();
