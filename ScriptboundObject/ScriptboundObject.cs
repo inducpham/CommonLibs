@@ -60,6 +60,7 @@ public class ScriptboundObject : ScriptableObject
         public List<Parameter> parameters = new List<Parameter>();
         public int indent = 0;
         public bool controlIf, controlLoop;
+        public bool negative;
 
         [System.NonSerialized]
         public int instructionNext, instructionChild;
@@ -143,7 +144,11 @@ public class ScriptboundObject : ScriptableObject
                 //if (current_instruction.parameters.Count > 0 && current_instruction.parameters[0].type == Instruction.ParamType.OBJECT) parameters[0] = null;
                 var result = method.Invoke(this, parameters);
 
-                if (current_instruction.controlIf && method.ReturnType == typeof(bool)) success = (bool)result;
+                if (current_instruction.controlIf && method.ReturnType == typeof(bool))
+                {
+                    success = (bool)result;
+                    if (current_instruction.negative) success = !success;
+                }
                 yield return current_instruction;
             }
             

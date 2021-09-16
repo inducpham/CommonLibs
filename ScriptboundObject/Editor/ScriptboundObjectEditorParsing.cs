@@ -46,7 +46,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             }
 
             var control = "";
-            if (instruction.controlIf) control += "if ";
+            if (instruction.controlIf) control += instruction.negative? "ifnot " : "if ";
             control += instruction.instructionName;
 
             if (method.Name == this.defaultStringMethod) { }
@@ -156,7 +156,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         return (instruction.Substring(0, colonIndex).Trim(), instruction.Substring(colonIndex + 1).Trim());
     }
 
-    static List<string> AVAILABLE_CONTROLS = new List<string> { "if" };
+    static List<string> AVAILABLE_CONTROLS = new List<string> { "if", "ifnot" };
     MethodInfo BreakInstructionControl(string control_str, ScriptboundObject.Instruction instruction, ScriptboundObject clone, Dictionary<string, MethodInfo> methods)
     {
         var controls = control_str.Split(new char[0], StringSplitOptions.RemoveEmptyEntries);
@@ -171,9 +171,13 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             throw new ParsingException("Instruction name not found: " + funcname);
         var method = methods[funcname];
 
-        if (control == "if" && method.ReturnType != typeof(bool)) throw new ParsingException("Instruction control `if` can only apply for instructions that return bool. Current instruction: " + method.Name);
+        if (control != null)
+        {
+            if (control.StartsWith("if") && method.ReturnType != typeof(bool)) throw new ParsingException("Instruction control `if` can only apply for instructions that return bool. Current instruction: " + method.Name);
+            instruction.controlIf = control.StartsWith("if");
+            instruction.negative = control.EndsWith("not");
+        }
 
-        instruction.controlIf = control == "if";
         instruction.instructionName = method.Name;
 
         return method;
