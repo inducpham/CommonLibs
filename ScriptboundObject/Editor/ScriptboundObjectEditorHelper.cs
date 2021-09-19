@@ -203,7 +203,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         return (0, null);
     }
 
-    private Dictionary<int, Object> mapHashToObject = new Dictionary<int, Object>();
+    private static Dictionary<int, Object> mapHashToObject = new Dictionary<int, Object>();
 
     private string ObjectToString(UnityEngine.Object obj)
     {
