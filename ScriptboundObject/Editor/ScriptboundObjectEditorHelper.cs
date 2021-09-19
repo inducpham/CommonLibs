@@ -73,7 +73,8 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             start_index--;
             var c = text[start_index];
             if (c == '\n') start_new_line_count++;
-            else if (c != '\t' && c != ' ') start_new_line_count = 0;
+            else if (c != '\t' && c != ' ' && c != 13) start_new_line_count = 0;
+
             if (start_new_line_count >= 2)
             {
                 start_index++;
@@ -88,7 +89,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             end_index++;
             var c = text[end_index];
             if (c == '\n') end_new_line_count++;
-            else if (c != '\t' && c != ' ') end_new_line_count = 0;
+            else if (c != '\t' && c != ' ' && c != 13) end_new_line_count = 0;
             if (end_new_line_count >= 2)
             {
                 end_index--;

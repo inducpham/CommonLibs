@@ -89,6 +89,8 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 
     private void ParseInstructions(ScriptboundObject target, string fullString)
     {
+        fullString = fullString.Replace("" + ((char)13), "");
+
         var methods = target.ExtractMethodReflections();
         var clone = target.Duplicate();
 
@@ -117,6 +119,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         if (instruction.Length <= 0) return; //if line is empty then no need to do anything
 
         instruction = instruction.Trim(' ');
+        instruction = instruction.Trim((char) 13);
 
         //calculate tabCount
         var tabCount = 0;
