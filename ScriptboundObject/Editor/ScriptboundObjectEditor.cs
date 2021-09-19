@@ -179,7 +179,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     /// SECTION DRAW PREVIEW
     bool preview_showing = true;
     static GUIStyle preview_style = null;
-    Vector2 scrollPosition;
+    Vector2 scrollPosition, oldScrollPosition;
     void DrawPreview()
     {
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
@@ -355,6 +355,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             hint_rect_position.width = 100;
             hint_rect_position.height = 100;
             recent_hint_cursor_position = tEditor.graphicalCursorPos;
+            oldScrollPosition = scrollPosition;
 
             // Get the context here, depends on the context to create suggestion
             var (line_mod, line_method, line_index, line_var) = ExtractCurrentLineContext(tEditor);
@@ -391,6 +392,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
                     AutoCompleteEditingContents(tEditor, hint_cursor_position, hint_result);
                 }
                 tEditor.selectIndex = tEditor.cursorIndex;
+                scrollPosition = oldScrollPosition;
             }
             Repaint();
         }
