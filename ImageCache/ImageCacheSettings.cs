@@ -5,6 +5,7 @@ using UnityEngine;
 [CreateAssetMenu]
 public class ImageCacheSettings : ScriptableObject
 {
+    public static bool CacheEnabled = true;
     public static ImageCacheSettings Instance => FindInstance();
     static ImageCacheSettings instance;
     static ImageCacheSettings FindInstance()

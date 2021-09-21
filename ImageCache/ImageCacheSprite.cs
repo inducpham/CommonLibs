@@ -25,7 +25,7 @@ public class ImageCacheSprite : MonoBehaviour
 
     private void Update()
     {
-        if (CurrentSprite == cachedSprite || CurrentSprite == sourceSprite) return;
+        if (ImageCacheSettings.CacheEnabled == false) return;
 
         this.sourceSprite = CurrentSprite;
         if (this.sourceSprite == null) spriteRenderer.sprite = null;

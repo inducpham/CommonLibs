@@ -24,6 +24,7 @@ public class ImageCacheUI : MonoBehaviour
 
     private void Update()
     {
+        if (ImageCacheSettings.CacheEnabled == false) return;
         if (CurrentSprite == cachedSprite || CurrentSprite == sourceSprite) return;
 
         this.sourceSprite = CurrentSprite;
