@@ -208,19 +208,29 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     private string ObjectToString(UnityEngine.Object obj)
     {
         if (obj == null) return "none";
-        var hash = obj.GetHashCode();
-        mapHashToObject[hash] = obj;
-        return string.Format("{0}({1})", obj.name, hash);
+
+        var path = AssetDatabase.GetAssetPath(obj);
+        var guid = AssetDatabase.AssetPathToGUID(path);
+        var index = new List<UnityEngine.Object>(AssetDatabase.LoadAllAssetsAtPath(path)).IndexOf(obj);
+
+        return string.Format("{0}({1}+{2})", obj.name, guid, index);
     }
 
     private UnityEngine.Object StringToObject(string str)
     {
-        var matches = Regex.Matches(str, @"\((\d+)\)");
-        if (matches.Count <= 0) return null;
-        var match = matches[matches.Count - 1];
-        if (match.Success == false) return null;
-        var hash = int.Parse(match.Value.Substring(1, match.Value.Length - 2));
-        if (mapHashToObject.ContainsKey(hash) == false) return null;
-        return mapHashToObject[hash];
+        var matches = Regex.Matches(str, @"\(([a-zA-Z0-9]+)\+(\d+)\)");
+
+        if (matches.Count <= 0 || matches[0].Success == false) return null;
+
+        var matchPath = matches[0].Groups[1].Value;
+        matchPath = AssetDatabase.GUIDToAssetPath(matchPath);
+        var matchIndex = matches[0].Groups[2].Value;
+        int index = 0;
+
+        if (int.TryParse(matchIndex, out index) == false) return null;
+
+        var objects = AssetDatabase.LoadAllAssetsAtPath(matchPath);
+        if (index < 0 || index >= objects.Length) return null;
+        return objects[index];
     }
 }
