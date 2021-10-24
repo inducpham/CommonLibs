@@ -225,7 +225,59 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             throw new ParsingException(string.Format("Parameter count for {0} mismatched. Expected {1}, received {2}", method.Name, parameters.Length, token_len));
 
         for (var i = 0; i < token_len; i++)
+            ValidateInstructionParam(tokens[i].Trim(), parameters[i].ParameterType);
+
+        for (var i = 0; i < token_len; i++)
             ExtractInstructionParam(tokens[i].Trim(), instruction, clone, parameters[i].ParameterType);
+    }
+
+    void ValidateInstructionParam(string param_str, System.Type type)
+    {
+        ScriptboundObject.Instruction.Parameter param = new ScriptboundObject.Instruction.Parameter();
+
+        if (type == typeof(string))
+        {
+            param.type = ScriptboundObject.Instruction.ParamType.STRING;
+            return;
+        }
+
+        if (type == typeof(int))
+        {
+            int param_val;
+            if (int.TryParse(param_str, out param_val) == false)
+                throw new ParsingException("Instruction param int type parse failure: " + param_str);
+            return;
+        }
+
+        if (type == typeof(float))
+        {
+            float param_val;
+            if (float.TryParse(param_str, out param_val) == false) throw new ParsingException("Instruction param float type parse failure: " + param_str);
+            return;
+        }
+
+        if (type.IsEnum)
+        {
+            int param_val = (int)System.Enum.Parse(type, param_str, true);
+            if (param_val < 0) throw new ParsingException("Instruction param Enum type parse failure: " + param_str);
+            return;
+        }
+
+        if (type == typeof(bool))
+        {
+            bool param_val;
+            if (bool.TryParse(param_str, out param_val) == false) throw new ParsingException("Instruction bool type parse failure: " + param_str);
+            return;
+        }
+
+        if (typeof(UnityEngine.Object).IsAssignableFrom(type))
+        {
+            var val = StringToObject(param_str);
+            if (val == null && param_str.Trim().Length > 0) throw new ParsingException("Instruction object type parse failure: " + param_str);
+            return;
+        }
+
+        throw new ParsingException("Instruction param type not supported: " + type.Name);
     }
 
     void ExtractInstructionParam(string param_str, ScriptboundObject.Instruction instruction, ScriptboundObject clone, System.Type type)
