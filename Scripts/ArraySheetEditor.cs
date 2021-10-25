@@ -152,9 +152,10 @@ public class ArraySheetEditorDrawer : PropertyDrawer
         var remaining_cells = width * height;
         for (var y = 0; y < height; y++)
         {
-            property.Next(true);
+            var success = property.Next(true);
+            if (success == false) break;
             var x = 0;
-            while (property.depth > depth && remaining_cells > 0)
+            while (remaining_cells > 0 && property.depth > depth)
             {
                 if (property.depth == depth + 1 && ValidateProp(property))
                 {
