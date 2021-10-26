@@ -272,6 +272,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 
         if (typeof(UnityEngine.Object).IsAssignableFrom(type))
         {
+            if (param_str.Trim().Length == 0 || param_str.Trim().ToLower() == "none") return;
             var val = StringToObject(param_str);
             if (val == null && param_str.Trim().Length > 0) throw new ParsingException("Instruction object type parse failure: " + param_str);
             return;
