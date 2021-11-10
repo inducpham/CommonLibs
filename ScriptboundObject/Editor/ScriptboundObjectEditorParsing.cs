@@ -61,7 +61,9 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 
                 string str_params = "";
 
-                if (parameters.Length == 1 && instruction.parameters[0].type == ScriptboundObject.Instruction.ParamType.STRING && parameters[0] != null)
+                if (instruction.instructionName == this.defaultStringMethod)
+                    str_params = DefaultStringInstructionToString(instruction, parameters, highlight);
+                else if (parameters.Length == 1 && instruction.parameters[0].type == ScriptboundObject.Instruction.ParamType.STRING && parameters[0] != null)
                 {
                     str_params += parameters[0].ToString();
                 }
@@ -85,6 +87,26 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         }
 
         return results;
+    }
+
+    string DefaultStringInstructionToString(ScriptboundObject.Instruction instruction, object[] parameters, bool highlight)
+    {
+        if (instruction.parameters[0].type != ScriptboundObject.Instruction.ParamType.STRING) return "";
+        var result = parameters[0].ToString();
+
+        if (instruction.injectibles == null || instruction.injectibles.Count <= 0) return result;
+        var count = instruction.injectibles.Count;
+        for (var i = count - 1; i >= 0; i--)
+        {
+            var injectible = instruction.injectibles[i];
+            var index = injectible.index;
+            var obj = injectible.obj;
+            var obj_str = "[[" + ObjectToString(obj) + "]]";
+            if (highlight) obj_str = "<b>" + obj_str + "</b>";
+            result = result.Insert(index, obj_str);
+        }
+
+        return result;
     }
 
     private void ParseInstructions(ScriptboundObject target, string fullString)
@@ -145,6 +167,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             {
                 instructionObj.instructionName = defaultStringMethod;
                 instructionObj.parameters = new List<ScriptboundObject.Instruction.Parameter>();
+                instructionObj.injectibles = new List<ScriptboundObject.Instruction.Injectible>();
                 ExtractInstructionParam(TrimContentIndent(instruction, tabCount), instructionObj, clone, typeof(string));
             }
             else throw e;
@@ -283,6 +306,12 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 
     void ExtractInstructionParam(string param_str, ScriptboundObject.Instruction instruction, ScriptboundObject clone, System.Type type)
     {
+        if (instruction.instructionName == defaultStringMethod && type == typeof(string))
+        {
+            ExtractDefaultStringMethod(param_str, instruction, clone, type);
+            return;
+        }
+
         ScriptboundObject.Instruction.Parameter param = new ScriptboundObject.Instruction.Parameter();
         instruction.parameters.Add(param);
 
@@ -346,5 +375,58 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         }
 
         throw new ParsingException("Instruction param type not supported: " + type.Name);
+    }
+
+    static Regex regexExtractInjectible = new Regex(@"(\[\[.*?\]\])");
+
+    private void ExtractDefaultStringMethod(string param_str, ScriptboundObject.Instruction instruction, ScriptboundObject clone, Type type)
+    {
+        var matches = regexExtractInjectible.Matches(param_str);
+
+        List<UnityEngine.Object> objects = new List<UnityEngine.Object>();
+        List<int> indices = new List<int>();
+        List<int> lens = new List<int>();
+        int overhead = 0;
+        foreach (Match match in matches) {
+            var str = match.Value.Substring(2, match.Value.Length - 4);
+            var obj = this.StringToObject(str);
+            if (obj == null) break;
+
+            objects.Add(obj);
+            indices.Add(match.Index - overhead);
+            lens.Add(match.Value.Length);
+            overhead += match.Value.Length;
+        }
+
+        if (matches.Count == 0 || objects.Count != matches.Count)
+        {
+            ScriptboundObject.Instruction.Parameter param = new ScriptboundObject.Instruction.Parameter();
+            instruction.parameters.Add(param);
+            param.type = ScriptboundObject.Instruction.ParamType.STRING;
+            param.valueIndex = clone.scriptStringValues.Count;
+            clone.scriptStringValues.Add(param_str);
+            return;
+        }
+
+        for (var i = 0; i < objects.Count; i++)
+            param_str = param_str.Remove(indices[i], lens[i]);
+
+        {
+            ScriptboundObject.Instruction.Parameter param = new ScriptboundObject.Instruction.Parameter();
+            instruction.parameters.Add(param);
+            param.type = ScriptboundObject.Instruction.ParamType.STRING;
+            param.valueIndex = clone.scriptStringValues.Count;
+            clone.scriptStringValues.Add(param_str);
+        }
+
+        instruction.injectibles = new List<ScriptboundObject.Instruction.Injectible>();
+        for (var i = 0; i < objects.Count; i++)
+        {
+            instruction.injectibles.Add(new ScriptboundObject.Instruction.Injectible()
+            {
+                index = indices[i],
+                obj = objects[i]
+            });
+        }
     }
 }

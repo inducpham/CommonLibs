@@ -11,6 +11,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     private Dictionary<string, MethodInfo> methodReflections;
     private Dictionary<string, string> methodDescriptions;
     private string defaultStringMethod = null;
+    private System.Type[] defaultStringInjectableTypes = null;
 
     private string previewContent;
     private string previewMethods;
@@ -31,6 +32,8 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
     void CheckForDefaultStringMethod()
     {
         defaultStringMethod = null;
+        defaultStringInjectableTypes = null;
+
         foreach (var method in this.methodReflections.Values)
         {
             var prmts = method.GetParameters();
@@ -38,6 +41,10 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             if (method.GetCustomAttribute(typeof(ScriptboundObject.Default), true) == null) continue;
 
             defaultStringMethod = method.Name;
+            var injectable_types = (ScriptboundObject.StringInjectible) method.GetCustomAttribute(typeof(ScriptboundObject.StringInjectible), true);
+            if (injectable_types != null) this.defaultStringInjectableTypes = injectable_types.types;
+
+            return;
         }
     }
 
@@ -327,7 +334,8 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             recentTextEditorCursorPos = tEditor.graphicalCursorPos;
             UpdateCursorScroll();
             ExtractCurrentLineFunctionHint(tEditor);
-            ExtractCurrentLineObjectHint(tEditor);
+            if (recentTextEditorFunctionHint.Length <= 0) ExtractDefaultLineObjectHint(tEditor);
+            else ExtractCurrentLineObjectHint(tEditor);
         }
 
         var keyboardControlID = EditorGUIUtility.GetControlID(FocusType.Keyboard);
@@ -359,7 +367,10 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 
             // Get the context here, depends on the context to create suggestion
             var (line_mod, line_method, line_index, line_var) = ExtractCurrentLineContext(tEditor);
-            CreateSuggestionPopup(line_mod, line_method, line_index, line_var);
+            if (methodReflections.ContainsKey(line_method) == false && EditingDefaultLineInjectible(tEditor))
+                CreateDefaultLineObjectInjectibleSuggestion(tEditor);
+            else
+                CreateSuggestionPopup(line_mod, line_method, line_index, line_var);
         }
         #endregion
 
@@ -487,6 +498,13 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         recentTextEditorObjectHint = AssetDatabase.GetAssetPath(o) + ":" + o.ToString();
     }
 
+    private void ExtractDefaultLineObjectHint(TextEditor te)
+    {
+        recentTextEditorObjectHint = "";
+        if (EditingDefaultLineInjectible(te) == false) return;
+        recentTextEditorObjectHint = ExtractDefaultLineInjectible(te);
+    }
+
     void AutoCompleteEditingContents(TextEditor te, int cursor_index, string content)
     {
         //take explicit scenario out first
@@ -506,7 +524,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         {
             start_cursor_index--;
             starting_char = start_cursor_index < 0 ? ' ' : editing_contents[start_cursor_index];
-            starting_char_break = starting_char == ' ' || starting_char == '\n' || starting_char == '\t' || starting_char == ':' || starting_char == ',';
+            starting_char_break = starting_char == ' ' || starting_char == '\n' || starting_char == '\t' || starting_char == ':' || starting_char == ',' || starting_char == '[' || starting_char == ']';
         }
         while (start_cursor_index >= 0 && starting_char_break == false);
 
@@ -541,6 +559,37 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
                 popup = new ScriptboundObjectEditorHintPopup(param_type, StringToObject(line_var));
             else popup = new ScriptboundObjectEditorHintPopup(param_type, line_var);
         }
+
+        popup.callbackClose += () =>
+        {
+            hint_popup_completed = true;
+        };
+        popup.callbackInput += (result) =>
+        {
+            hint_result_input = result;
+            hint_popup_completed = true;
+        };
+        popup.callbackInputObject += (str, result) =>
+        {
+            hint_result_input = str;
+            hint_result_input_object = result;
+            hint_popup_completed = true;
+        };
+        PopupWindow.Show(hint_rect_position, popup);
+    }
+
+    private void CreateDefaultLineObjectInjectibleSuggestion(TextEditor tEditor)
+    {
+        if (defaultStringInjectableTypes == null) return;
+
+        hint_result_input = null;
+        hint_result_input_object = null;
+
+        ScriptboundObjectEditorHintPopup popup = null;
+
+        var line_var = ExtractDefaultLineInjectibleBeforeCursor(tEditor);
+        //TODO: ADD MORE SUPPORT FOR MULTIPLE TYPES
+        popup = new ScriptboundObjectEditorHintPopup(new List<System.Type>(defaultStringInjectableTypes), line_var);
 
         popup.callbackClose += () =>
         {

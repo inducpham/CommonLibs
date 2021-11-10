@@ -56,8 +56,16 @@ public class ScriptboundObject : ScriptableObject
             public int valueIndex;
         }
 
+        [System.Serializable]
+        public class Injectible
+        {
+            public int index;
+            public UnityEngine.Object obj;
+        }
+
         public string instructionName;
         public List<Parameter> parameters = new List<Parameter>();
+        public List<Injectible> injectibles = new List<Injectible>();
         public int indent = 0;
         public bool controlIf, controlLoop;
         public bool negative;
@@ -96,6 +104,7 @@ public class ScriptboundObject : ScriptableObject
     private Dictionary<string, MethodInfo> mapMethods;
     private string defaultStringMethod;
     private int recentInstructionIndex;
+    protected List<Instruction.Injectible> RecentInstructionInjectibles => scriptInstructions[recentInstructionIndex].injectibles;
 
     void ExtractMapInstructions()
     {
@@ -108,8 +117,8 @@ public class ScriptboundObject : ScriptableObject
             if (method.GetCustomAttribute(typeof(ScriptboundObject.Default), true) == null) continue;
             defaultStringMethod = method.Name;
         }
-
     }
+
 
     public IEnumerable<Instruction> IterateInstance()
     {
@@ -140,8 +149,9 @@ public class ScriptboundObject : ScriptableObject
                 var method = mapMethods[current_instruction.instructionName];
                 var parameters = ExtractParameters(method, current_instruction);
                 recentInstructionIndex = current_instruction_index;
-                
+
                 //if (current_instruction.parameters.Count > 0 && current_instruction.parameters[0].type == Instruction.ParamType.OBJECT) parameters[0] = null;
+                if (parameters.Length > method.GetParameters().Length) Array.Resize(ref parameters, method.GetParameters().Length);
                 var result = method.Invoke(this, parameters);
 
                 if (current_instruction.controlIf && method.ReturnType == typeof(bool))
@@ -171,6 +181,31 @@ public class ScriptboundObject : ScriptableObject
             else
                 current_instruction_index = current_instruction.instructionNext;
         }
+    }
+
+    //protected List<int> recentDefaultStringInjectibleObjects
+    void ExtractDefaultStringInjectibles(object[] parameters)
+    {
+        //if (parameters.Length <= 1 || parameters.Length % 2 == 0) return;
+
+        //for (var i = 1; i < parameters.Length; i++)
+        //{
+        //    if (parameters[i] == null) return;
+        //    if (i % 2 == 1 && parameters[i].GetType() != typeof(int)) return;
+        //    if (i % 2 == 0 && typeof(UnityEngine.Object).IsAssignableFrom(parameters[i].GetType()) == false) return;
+        //}
+
+        //var count = (parameters.Length - 1) / 2;
+        //for (var i = count - 1; i >= 0; i--)
+        //{
+        //    var index = (int)parameters[i * 2 + 1];
+        //    var obj = (UnityEngine.Object)parameters[i * 2 + 2];
+        //    var obj_str = "[[" + ObjectToString(obj) + "]]";
+        //    if (highlight) obj_str = "<b>" + obj_str + "</b>";
+        //    result = result.Insert(index, obj_str);
+        //}
+
+        //return result;
     }
 
     public System.Object[] ExtractParameters(MethodInfo method, Instruction current_instruction)
@@ -250,4 +285,14 @@ public class ScriptboundObject : ScriptableObject
 
     [AttributeUsage(AttributeTargets.Method)]
     public class Default : System.Attribute { }
+
+    public class StringInjectible : System.Attribute
+    {
+        public Type[] types;
+
+        public StringInjectible(params System.Type[] types)
+        {
+            this.types = types;
+        }
+    }
 }

@@ -233,4 +233,69 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         if (index < 0 || index >= objects.Length) return null;
         return objects[index];
     }
+
+    private bool EditingDefaultLineInjectible(TextEditor tEditor)
+    {
+        if (defaultStringInjectableTypes == null) return false;
+        bool NotLineBreak(char c) => c != '\t' && c != ' ' && c != 13;
+
+        var index = tEditor.cursorIndex;
+        var text = tEditor.text;
+
+        while (index > 1 && NotLineBreak(text[index - 1]) && NotLineBreak(text[index - 2]))
+        {
+            if (text[index - 1] == '[' && text[index - 2] == '[') return true;
+            index--;
+        }
+
+        return false;
+    }
+
+    private string ExtractDefaultLineInjectible(TextEditor tEditor)
+    {
+        if (defaultStringInjectableTypes == null) return "";
+        bool NotLineBreak(char c) => c != '\t' && c != ' ' && c != 13;
+
+        var index = tEditor.cursorIndex;
+        var start_index = index;
+        var end_index = index;
+        var text = tEditor.text;
+
+        while (start_index > 1 && NotLineBreak(text[start_index - 1]) && NotLineBreak(text[start_index - 2]))
+        {
+            if (text[start_index - 1] == '[' && text[start_index - 2] == '[') break;
+            start_index--;
+        }
+
+        if (start_index <= 1) return "";
+        if ((text[start_index - 1] == '[' && text[start_index - 2] == '[') == false) return "";
+
+        while (end_index < text.Length - 1 && NotLineBreak(text[end_index]) && NotLineBreak(text[end_index + 1]))
+        {
+            if (text[end_index] == ']' && text[end_index + 1] == ']') break;
+            end_index++;
+        }
+
+        if (end_index >= text.Length - 1) return "";
+        if ((text[end_index] == ']' && text[end_index + 1] == ']')  == false) return "";
+
+        return text.Substring(start_index, end_index - start_index);
+    }
+
+    private string ExtractDefaultLineInjectibleBeforeCursor(TextEditor tEditor)
+    {
+        bool NotLineBreak(char c) => c != '\t' && c != ' ' && c != 13;
+
+        var start_index = tEditor.cursorIndex;
+        var index = tEditor.cursorIndex;
+        var text = tEditor.text;
+
+        while (index > 1 && NotLineBreak(text[index - 1]) && NotLineBreak(text[index - 2]))
+        {
+            if (text[index - 1] == '[' && text[index - 2] == '[') return text.Substring(index, start_index - index);
+            index--;
+        }
+
+        return "";
+    }
 }

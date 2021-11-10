@@ -21,7 +21,6 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
     public System.Action<string, UnityEngine.Object> callbackInputObject;
 
     string textInput = "";
-    System.Type hintType;
     private AutocompleteSearchField autocompleteSearchField;
     List<string> searchPaths;
     Dictionary<string, UnityEngine.Object> mapSearchObject = new Dictionary<string, UnityEngine.Object>();
@@ -39,63 +38,72 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
 
     public ScriptboundObjectEditorHintPopup(System.Type hintType, UnityEngine.Object obj = null)
     {
-        if (obj == null) HintTypeConstructor(hintType);
+        if (obj == null) HintTypeConstructor(new List<System.Type>() { hintType });
         else
         {
             var existing_value = AssetDatabase.GetAssetPath(obj) + ":" + obj.name;
-            HintTypeConstructor(hintType, existing_value);
+            HintTypeConstructor(new List<System.Type>() { hintType }, existing_value);
         }
     }
 
-    public ScriptboundObjectEditorHintPopup(System.Type hintType, string existing_value = null)
+    public ScriptboundObjectEditorHintPopup(System.Type hintType, string linevar = "")
     {
-        HintTypeConstructor(hintType, existing_value);
+        HintTypeConstructor(new List<System.Type>() { hintType }, linevar);
     }
-    
-    void HintTypeConstructor(System.Type hintType, string existing_value = null)
+
+    public ScriptboundObjectEditorHintPopup(List<System.Type> hintTypes, string linevar = "")
     {
-        this.hintType = hintType;
-        var type = hintType;
+        HintTypeConstructor(hintTypes, linevar);
+    }
+
+    void HintTypeConstructor(List<System.Type> hintTypes, string existing_value = null)
+    {
         var options = new List<string>();
 
-        if (type.IsEnum)
+        foreach (var hintType in hintTypes)
         {
-            var names = System.Enum.GetNames(type);
-            options = new List<string>(names);
-        }
-        else if (typeof(MonoBehaviour).IsAssignableFrom(hintType))
-        {
-            var uids = AssetDatabase.FindAssets("t: GameObject");
-            foreach (var uid in uids)
-            {
-                var path = AssetDatabase.GUIDToAssetPath(uid);
-                var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-                var co = go.GetComponent(hintType);
-                if (co == null) continue;
+            var type = hintType;
 
-                var p = path + ":" + go.name;
-                options.Add(p);
-                mapSearchObject[p] = co;
-            }
-        } else
-        {
-            var uids = AssetDatabase.FindAssets("t:" + hintType.Name);
-            foreach (var uid in uids)
+            if (type.IsEnum)
             {
-                var path = AssetDatabase.GUIDToAssetPath(uid);
-                var objs = AssetDatabase.LoadAllAssetsAtPath(path);
-                foreach (var obj in objs)
+                var names = System.Enum.GetNames(type);
+                options = new List<string>(names);
+            }
+            else if (typeof(MonoBehaviour).IsAssignableFrom(hintType))
+            {
+                var uids = AssetDatabase.FindAssets("t: GameObject");
+                foreach (var uid in uids)
                 {
-                    if (hintType.IsAssignableFrom(obj.GetType()))
-                    {
-                        var p = path + ":" + obj.name;
-                        options.Add(p);
-                        mapSearchObject[p] = obj;
-                    }
+                    var path = AssetDatabase.GUIDToAssetPath(uid);
+                    var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                    var co = go.GetComponent(hintType);
+                    if (co == null) continue;
+
+                    var p = path + ":" + go.name;
+                    options.Add(p);
+                    mapSearchObject[p] = co;
                 }
             }
-            //options = new List<string>(AssetDatabase.GetAllAssetPaths());
-            options.RemoveAll((s) => s.StartsWith("Assets") == false);
+            else
+            {
+                var uids = AssetDatabase.FindAssets("t:" + hintType.Name);
+                foreach (var uid in uids)
+                {
+                    var path = AssetDatabase.GUIDToAssetPath(uid);
+                    var objs = AssetDatabase.LoadAllAssetsAtPath(path);
+                    foreach (var obj in objs)
+                    {
+                        if (hintType.IsAssignableFrom(obj.GetType()))
+                        {
+                            var p = path + ":" + obj.name;
+                            options.Add(p);
+                            mapSearchObject[p] = obj;
+                        }
+                    }
+                }
+                //options = new List<string>(AssetDatabase.GetAllAssetPaths());
+                options.RemoveAll((s) => s.StartsWith("Assets") == false);
+            }
         }
 
         Setup(options, existing_value);
