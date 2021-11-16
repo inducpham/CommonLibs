@@ -62,10 +62,11 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
                 string str_params = "";
 
                 if (instruction.instructionName == this.defaultStringMethod)
-                    str_params = DefaultStringInstructionToString(instruction, parameters, highlight);
+                    str_params = ParseDefaultStringInstruction(instruction, parameters, highlight);
                 else if (parameters.Length == 1 && instruction.parameters[0].type == ScriptboundObject.Instruction.ParamType.STRING && parameters[0] != null)
                 {
-                    str_params += parameters[0].ToString();
+                    str_params += ParseDefaultStringInstruction(instruction, parameters, highlight);
+                    //str_params += parameters[0].ToString(); //TODO: CHANGE THIS TO SUPPORT INJECTIBLE AS WELL
                 }
                 else
                     for (var i = 0; i < instruction.parameters.Count; i++)
@@ -89,7 +90,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         return results;
     }
 
-    string DefaultStringInstructionToString(ScriptboundObject.Instruction instruction, object[] parameters, bool highlight)
+    string ParseDefaultStringInstruction(ScriptboundObject.Instruction instruction, object[] parameters, bool highlight)
     {
         if (instruction.parameters[0].type != ScriptboundObject.Instruction.ParamType.STRING) return "";
         var result = parameters[0].ToString();
@@ -136,22 +137,22 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         target.scriptInstructions = clone.scriptInstructions;
     }
 
-    private void ParseInstruction(string instruction, ScriptboundObject clone, Dictionary<string, MethodInfo> methods)
+    private void ParseInstruction(string instruction_str, ScriptboundObject clone, Dictionary<string, MethodInfo> methods)
     {
-        if (instruction.Length <= 0) return; //if line is empty then no need to do anything
+        if (instruction_str.Length <= 0) return; //if line is empty then no need to do anything
 
-        instruction = instruction.Trim(' ');
-        instruction = instruction.Trim((char) 13);
+        instruction_str = instruction_str.Trim(' ');
+        instruction_str = instruction_str.Trim((char) 13);
 
         //calculate tabCount
         var tabCount = 0;
-        for (var i = 0; i < instruction.Length; i++) if (instruction[i] != '\t') { tabCount = i; break; }
+        for (var i = 0; i < instruction_str.Length; i++) if (instruction_str[i] != '\t') { tabCount = i; break; }
 
         //trim instruction from tabs
-        instruction = instruction.Trim('\t');
+        instruction_str = instruction_str.Trim('\t');
 
         //break the instruction into two parts
-        var (controls, contents) = BreakInstruction(instruction);
+        var (controls, contents) = BreakInstruction(instruction_str);
 
         ScriptboundObject.Instruction instructionObj = new ScriptboundObject.Instruction();
         instructionObj.indent = tabCount;
@@ -165,10 +166,11 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         {
             if (defaultStringMethod != null)
             {
+                var attr_injectible = methodReflections[defaultStringMethod].GetCustomAttribute<ScriptboundObject.StringInjectible>();
                 instructionObj.instructionName = defaultStringMethod;
                 instructionObj.parameters = new List<ScriptboundObject.Instruction.Parameter>();
                 instructionObj.injectibles = new List<ScriptboundObject.Instruction.Injectible>();
-                ExtractInstructionParam(TrimContentIndent(instruction, tabCount), instructionObj, clone, typeof(string));
+                ExstractSingleStringInstruction(TrimContentIndent(instruction_str, tabCount), instructionObj, clone, attr_injectible);
             }
             else throw e;
         }
@@ -214,10 +216,12 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         var parameters = method.GetParameters();
         if (parameters.Length <= 0) return; //if param length is zero then no need to do anything
 
+        var attr_injectible = method.GetCustomAttribute<ScriptboundObject.StringInjectible>();
+
         //auto parse as string if this is the only field required
         if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
         {
-            ExtractInstructionParam(contents, instruction, clone, typeof(string));
+            ExstractSingleStringInstruction(contents, instruction, clone, attr_injectible);
             return;
         }
 
@@ -306,12 +310,6 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 
     void ExtractInstructionParam(string param_str, ScriptboundObject.Instruction instruction, ScriptboundObject clone, System.Type type)
     {
-        if (instruction.instructionName == defaultStringMethod && type == typeof(string))
-        {
-            ExtractDefaultStringMethod(param_str, instruction, clone, type);
-            return;
-        }
-
         ScriptboundObject.Instruction.Parameter param = new ScriptboundObject.Instruction.Parameter();
         instruction.parameters.Add(param);
 
@@ -379,8 +377,18 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 
     static Regex regexExtractInjectible = new Regex(@"(\[\[.*?\]\])");
 
-    private void ExtractDefaultStringMethod(string param_str, ScriptboundObject.Instruction instruction, ScriptboundObject clone, Type type)
+    private void ExstractSingleStringInstruction(string param_str, ScriptboundObject.Instruction instruction, ScriptboundObject clone, ScriptboundObject.StringInjectible attr_injectible = null)
     {
+        if (attr_injectible == null)
+        {
+            ScriptboundObject.Instruction.Parameter param = new ScriptboundObject.Instruction.Parameter();
+            instruction.parameters.Add(param);
+            param.type = ScriptboundObject.Instruction.ParamType.STRING;
+            param.valueIndex = clone.scriptStringValues.Count;
+            clone.scriptStringValues.Add(param_str);
+            return;
+        }
+
         var matches = regexExtractInjectible.Matches(param_str);
 
         List<UnityEngine.Object> objects = new List<UnityEngine.Object>();

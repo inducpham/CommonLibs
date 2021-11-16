@@ -234,9 +234,8 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         return objects[index];
     }
 
-    private bool EditingDefaultLineInjectible(TextEditor tEditor)
+    private bool EditingInjectibleString(TextEditor tEditor)
     {
-        if (defaultStringInjectableTypes == null) return false;
         bool NotLineBreak(char c) => c != '\t' && c != ' ' && c != 13;
 
         var index = tEditor.cursorIndex;
@@ -251,9 +250,8 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         return false;
     }
 
-    private string ExtractDefaultLineInjectible(TextEditor tEditor)
+    private string ExtractLineInjectible(TextEditor tEditor)
     {
-        if (defaultStringInjectableTypes == null) return "";
         bool NotLineBreak(char c) => c != '\t' && c != ' ' && c != 13;
 
         var index = tEditor.cursorIndex;

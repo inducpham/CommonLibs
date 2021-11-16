@@ -282,17 +282,42 @@ public class ScriptboundObject : ScriptableObject
 
         return results;
     }
+    
+    protected List<List<ScriptboundObject.Instruction.Injectible>> CollectChildrenDefaultStringInjectibles()
+    {
+        var results = new List<List<ScriptboundObject.Instruction.Injectible>>();
+        if (defaultStringMethod == null) return results;
+
+        var currentInstruction = scriptInstructions[recentInstructionIndex];
+        for (var i = recentInstructionIndex + 1; i < scriptInstructions.Count; i++)
+        {
+            var instruction = scriptInstructions[i];
+            if (instruction.indent <= currentInstruction.indent) break;
+            if (instruction.instructionName != defaultStringMethod || instruction.indent != currentInstruction.indent + 1) continue;
+            if (instruction.parameters.Count != 1 || instruction.parameters[0].type != Instruction.ParamType.STRING) continue;
+            results.Add(instruction.injectibles);
+        }
+
+        return results;
+
+    }
 
     [AttributeUsage(AttributeTargets.Method)]
     public class Default : System.Attribute { }
 
     public class StringInjectible : System.Attribute
     {
-        public Type[] types;
+        public Type[] types = new Type[0];
+        public string[] labels = new string[0];
 
         public StringInjectible(params System.Type[] types)
         {
             this.types = types;
+        }
+
+        public StringInjectible(params string[] labels)
+        {
+            this.labels = labels;
         }
     }
 }

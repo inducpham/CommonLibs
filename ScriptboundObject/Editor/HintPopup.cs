@@ -56,6 +56,31 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
         HintTypeConstructor(hintTypes, linevar);
     }
 
+    public ScriptboundObjectEditorHintPopup()
+    {
+    }
+
+    public void SetupByLabels(List<string> labels, string existing_value = null)
+    {
+        var options = new List<string>();
+
+        foreach (var label in labels)
+        {
+            var uids = AssetDatabase.FindAssets("l:" + label);
+            foreach (var uid in uids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(uid);
+                var o = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
+
+                var p = path + ":" + o.name;
+                options.Add(p);
+                mapSearchObject[p] = o;
+            }
+        }
+
+        Setup(options, existing_value);
+    }
+
     void HintTypeConstructor(List<System.Type> hintTypes, string existing_value = null)
     {
         var options = new List<string>();
