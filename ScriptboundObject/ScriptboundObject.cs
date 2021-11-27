@@ -309,6 +309,7 @@ public class ScriptboundObject : ScriptableObject
     {
         public Type[] types = new Type[0];
         public string[] labels = new string[0];
+        public string[] locations = null;
 
         public StringInjectible(params System.Type[] types)
         {
@@ -317,6 +318,18 @@ public class ScriptboundObject : ScriptableObject
 
         public StringInjectible(params string[] labels)
         {
+            this.labels = labels;
+        }
+
+        public StringInjectible(string location, params System.Type[] types)
+        {
+            this.locations = new string[] { location };
+            this.types = types;
+        }
+
+        public StringInjectible(string location, string[] labels)
+        {
+            this.locations = new string[] { location };
             this.labels = labels;
         }
     }

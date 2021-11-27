@@ -38,35 +38,35 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
 
     public ScriptboundObjectEditorHintPopup(System.Type hintType, UnityEngine.Object obj = null)
     {
-        if (obj == null) HintTypeConstructor(new List<System.Type>() { hintType });
+        if (obj == null) SetupByTypes(new List<System.Type>() { hintType });
         else
         {
             var existing_value = AssetDatabase.GetAssetPath(obj) + ":" + obj.name;
-            HintTypeConstructor(new List<System.Type>() { hintType }, existing_value);
+            SetupByTypes(new List<System.Type>() { hintType }, existing_value);
         }
     }
 
     public ScriptboundObjectEditorHintPopup(System.Type hintType, string linevar = "")
     {
-        HintTypeConstructor(new List<System.Type>() { hintType }, linevar);
+        SetupByTypes(new List<System.Type>() { hintType }, linevar);
     }
 
     public ScriptboundObjectEditorHintPopup(List<System.Type> hintTypes, string linevar = "")
     {
-        HintTypeConstructor(hintTypes, linevar);
+        SetupByTypes(hintTypes, linevar);
     }
 
     public ScriptboundObjectEditorHintPopup()
     {
     }
 
-    public void SetupByLabels(List<string> labels, string existing_value = null)
+    public void SetupByLabels(List<string> labels, string existing_value = null, string[] folders = null)
     {
         var options = new List<string>();
 
         foreach (var label in labels)
         {
-            var uids = AssetDatabase.FindAssets("l:" + label);
+            var uids = AssetDatabase.FindAssets("l:" + label, folders);
             foreach (var uid in uids)
             {
                 var path = AssetDatabase.GUIDToAssetPath(uid);
@@ -81,7 +81,7 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
         Setup(options, existing_value);
     }
 
-    void HintTypeConstructor(List<System.Type> hintTypes, string existing_value = null)
+    public void SetupByTypes(List<System.Type> hintTypes, string existing_value = null, string[] folders = null)
     {
         var options = new List<string>();
 
@@ -96,7 +96,7 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
             }
             else if (typeof(MonoBehaviour).IsAssignableFrom(hintType))
             {
-                var uids = AssetDatabase.FindAssets("t: GameObject");
+                var uids = AssetDatabase.FindAssets("t: GameObject", folders);
                 foreach (var uid in uids)
                 {
                     var path = AssetDatabase.GUIDToAssetPath(uid);
@@ -111,7 +111,7 @@ public class ScriptboundObjectEditorHintPopup : PopupWindowContent
             }
             else
             {
-                var uids = AssetDatabase.FindAssets("t:" + hintType.Name);
+                var uids = AssetDatabase.FindAssets("t:" + hintType.Name, folders);
                 foreach (var uid in uids)
                 {
                     var path = AssetDatabase.GUIDToAssetPath(uid);

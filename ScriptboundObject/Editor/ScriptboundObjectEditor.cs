@@ -587,7 +587,6 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         var att = method.GetCustomAttribute<ScriptboundObject.StringInjectible>();
 
         if (att == null) return;
-        Debug.Log("somethign soemthig");
 
         hint_result_input = null;
         hint_result_input_object = null;
@@ -597,11 +596,14 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         var line_var = ExtractDefaultLineInjectibleBeforeCursor(tEditor);
 
         if (att.types != null && att.types.Length > 0)
-            popup = new ScriptboundObjectEditorHintPopup(new List<System.Type>(att.types), line_var);
+        {
+            popup = new ScriptboundObjectEditorHintPopup();
+            popup.SetupByTypes(new List<System.Type>(att.types), line_var, folders: att.locations);
+        }
         else if (att.labels != null && att.labels.Length > 0)
         {
             popup = new ScriptboundObjectEditorHintPopup();
-            popup.SetupByLabels(new List<string>(att.labels), line_var);
+            popup.SetupByLabels(new List<string>(att.labels), line_var, folders: att.locations);
         }
         else return;
 
