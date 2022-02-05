@@ -398,7 +398,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         foreach (Match match in matches) {
             var str = match.Value.Substring(2, match.Value.Length - 4);
             var obj = this.StringToObject(str);
-            if (obj == null) break;
+            if (obj == null) continue;
 
             objects.Add(obj);
             indices.Add(match.Index - overhead);
@@ -406,15 +406,17 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             overhead += match.Value.Length;
         }
 
-        if (matches.Count == 0 || objects.Count != matches.Count)
-        {
-            ScriptboundObject.Instruction.Parameter param = new ScriptboundObject.Instruction.Parameter();
-            instruction.parameters.Add(param);
-            param.type = ScriptboundObject.Instruction.ParamType.STRING;
-            param.valueIndex = clone.scriptStringValues.Count;
-            clone.scriptStringValues.Add(param_str);
-            return;
-        }
+        //If the amount of matches not matching the number of objects detected, make this an invalid string instead
+        //This is a bit too extreme so we will just ignore it
+        //if (matches.Count == 0 || objects.Count != matches.Count)
+        //{
+        //    ScriptboundObject.Instruction.Parameter param = new ScriptboundObject.Instruction.Parameter();
+        //    instruction.parameters.Add(param);
+        //    param.type = ScriptboundObject.Instruction.ParamType.STRING;
+        //    param.valueIndex = clone.scriptStringValues.Count;
+        //    clone.scriptStringValues.Add(param_str);
+        //    return;
+        //}
 
         for (var i = 0; i < objects.Count; i++)
             param_str = param_str.Remove(indices[i], lens[i]);
