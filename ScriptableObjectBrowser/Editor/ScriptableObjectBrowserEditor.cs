@@ -39,6 +39,15 @@ namespace ScriptableObjectBrowser
             return result;
         }
 
+        protected T CreateLocalAsset<T>(ScriptableObject obj, string path) where T : UnityEngine.Object
+        {
+            var folder_path = GetAssetContainingFolder(obj);
+            if (string.IsNullOrEmpty(path)) return null;
+
+            path = Path.Combine(folder_path, path);
+            return CreateAsset<T>(path);
+        }
+
         protected T CreateSubAsset<T>(ScriptableObject obj, string name) where T : UnityEngine.Object
         {
             var path = AssetDatabase.GetAssetPath(obj);
