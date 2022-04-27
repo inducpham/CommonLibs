@@ -31,9 +31,6 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
 
         foreach (var instruction in instructions)
         {
-            if (methodReflections.ContainsKey(instruction.instructionName) == false) continue;
-            var method = methodReflections[instruction.instructionName];
-            if (method == null) continue;
 
             if (instructionParsedCount > 0) results += "\n\n";
             instructionParsedCount++;
@@ -45,9 +42,23 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
                 indent_replacement += '\t';
             }
 
+            //singular control
+
+            if (instruction.controlElse)
+            {
+                results += string.Format(highlight ? "<b>{0}: </b>" : "{0}: ", "else");
+                continue;
+            }
+
+
+            //prefix controls
             var control = "";
             if (instruction.controlIf) control += instruction.negative? "ifnot " : "if ";
             control += instruction.instructionName;
+
+            if (methodReflections.ContainsKey(instruction.instructionName) == false) continue;
+            var method = methodReflections[instruction.instructionName];
+            if (method == null) continue;
 
             if (method.Name == this.defaultStringMethod) { }
             else {
@@ -137,6 +148,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         target.scriptInstructions = clone.scriptInstructions;
     }
 
+    static List<string> SINGULAR_CONTROLS = new List<string> { "else" };
     private void ParseInstruction(string instruction_str, ScriptboundObject clone, Dictionary<string, MethodInfo> methods)
     {
         if (instruction_str.Length <= 0) return; //if line is empty then no need to do anything
@@ -157,22 +169,31 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         ScriptboundObject.Instruction instructionObj = new ScriptboundObject.Instruction();
         instructionObj.indent = tabCount;
 
-        try
+
+        if (string.IsNullOrEmpty(contents) && SINGULAR_CONTROLS.Contains(controls))
         {
-            var method = BreakInstructionControl(controls, instructionObj, clone, methods);
-            if (contents != null) contents = TrimContentIndent(contents, tabCount);
-            BreakInstructionContents(contents, instructionObj, clone, method);
-        } catch (ParsingException e)
+            if (controls == "else") instructionObj.controlElse = true;
+        }
+        else
         {
-            if (defaultStringMethod != null)
+            try
             {
-                var attr_injectible = methodReflections[defaultStringMethod].GetCustomAttribute<ScriptboundObject.StringInjectible>();
-                instructionObj.instructionName = defaultStringMethod;
-                instructionObj.parameters = new List<ScriptboundObject.Instruction.Parameter>();
-                instructionObj.injectibles = new List<ScriptboundObject.Instruction.Injectible>();
-                ExstractSingleStringInstruction(TrimContentIndent(instruction_str, tabCount), instructionObj, clone, attr_injectible);
+                var method = BreakInstructionControl(controls, instructionObj, clone, methods);
+                if (contents != null) contents = TrimContentIndent(contents, tabCount);
+                BreakInstructionContents(contents, instructionObj, clone, method);
             }
-            else throw e;
+            catch (ParsingException e)
+            {
+                if (defaultStringMethod != null)
+                {
+                    var attr_injectible = methodReflections[defaultStringMethod].GetCustomAttribute<ScriptboundObject.StringInjectible>();
+                    instructionObj.instructionName = defaultStringMethod;
+                    instructionObj.parameters = new List<ScriptboundObject.Instruction.Parameter>();
+                    instructionObj.injectibles = new List<ScriptboundObject.Instruction.Injectible>();
+                    ExstractSingleStringInstruction(TrimContentIndent(instruction_str, tabCount), instructionObj, clone, attr_injectible);
+                }
+                else throw e;
+            }
         }
         clone.scriptInstructions.Add(instructionObj);
     }

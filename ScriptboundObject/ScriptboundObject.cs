@@ -67,7 +67,7 @@ public class ScriptboundObject : ScriptableObject
         public List<Parameter> parameters = new List<Parameter>();
         public List<Injectible> injectibles = new List<Injectible>();
         public int indent = 0;
-        public bool controlIf, controlLoop;
+        public bool controlIf, controlLoop, controlElse;
         public bool negative;
 
         [System.NonSerialized]
@@ -131,6 +131,7 @@ public class ScriptboundObject : ScriptableObject
         // register the instruction index
         var previous_instruction_index = -1;
         var current_instruction_index = 0;
+        var previous_if_failure_indent = -1;
 
         RemapInstructionSequences();
 
@@ -174,10 +175,35 @@ public class ScriptboundObject : ScriptableObject
                 continue;
             }
 
+            //messy code but it works for now
+            if (current_instruction.controlElse)
+            {
+                if (previous_if_failure_indent > current_instruction_index)
+                {
+                    previous_if_failure_indent = -1;
+                    current_instruction_index = current_instruction.instructionNext;
+                }
+                if (previous_if_failure_indent == current_instruction.indent && current_instruction.instructionChild >= 0)
+                {
+                    current_instruction_index = current_instruction.instructionChild;
+                    previous_if_failure_indent = -1;
+                }
+                else
+                    current_instruction_index = current_instruction.instructionNext;
+
+                continue;
+            }
+
+            previous_if_failure_indent = -1;
             if (current_instruction.controlIf == false && current_instruction.instructionChild >= 0)
                 current_instruction_index = current_instruction.instructionChild;
             else if (current_instruction.controlIf && success && current_instruction.instructionChild >= 0)
                 current_instruction_index = current_instruction.instructionChild;
+            else if (current_instruction.controlIf && success == false)
+            {
+                previous_if_failure_indent = current_instruction.indent;
+                current_instruction_index = current_instruction.instructionNext;
+            }
             else
                 current_instruction_index = current_instruction.instructionNext;
         }
