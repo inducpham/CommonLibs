@@ -5,11 +5,14 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
+using UnityEditor.AddressableAssets;
+using UnityEditor.AddressableAssets.Settings;
+using UnityEditor.AddressableAssets.Build;
 
 [CustomEditor(typeof(ImageCacheSettings))]
 public class ImageCacheSettingsEditor : UnityEditor.Editor
 {
-    
+
     [MenuItem("Tools/Get image cache settings")]
     public static void GetImageCacheSettings()
     {
@@ -17,10 +20,10 @@ public class ImageCacheSettingsEditor : UnityEditor.Editor
 
         if (settings == null)
         {
-            AssetDatabase.CreateFolder("Assets/", "Resources");
+            //AssetDatabase.CreateFolder("Assets/", "Resources");
             settings = new ImageCacheSettings();
             settings.matchingPatterns.Add(@".*\.(jpg)$");
-            AssetDatabase.CreateAsset(settings, "Assets/Resources/ImageCache.asset");
+            AssetDatabase.CreateAsset(settings, "Assets/ImageCache.asset");
         }
 
         EditorGUIUtility.PingObject(settings);
@@ -49,11 +52,26 @@ public class ImageCacheSettingsEditor : UnityEditor.Editor
         DrawDefaultInspector();
     }
 
+    private AddressableAssetGroup addressable_group;
+    private AddressableAssetSettings addressable_settings;
+
     void CacheImages()
     {
-        Debug.Log("Start caching images");
-        AssetDatabase.DeleteAsset("Assets/Resources/ImageCache");
-        AssetDatabase.CreateFolder("Assets/Resources", "ImageCache");
+        var target = (ImageCacheSettings) base.target;
+        this.addressable_settings = AddressableAssetSettingsDefaultObject.GetSettings(true);
+        var group = addressable_settings.FindGroup(target.addressableGroupName);
+        if (group == null)
+        {
+            Debug.LogError("Addressable group \"" + target.addressableGroupName + "\" not found.");
+            return;
+        }
+
+        var entries = new HashSet<AddressableAssetEntry>(group.entries);
+        foreach (var entry in entries) group.RemoveAssetEntry(entry);
+        this.addressable_group = group;
+
+        AssetDatabase.DeleteAsset("Assets/ImageCache");
+        AssetDatabase.CreateFolder("Assets", "ImageCache");
         ((ImageCacheSettings)target).mapItems = new List<ImageCacheSettings.MapItem>();
         var patterns = ((ImageCacheSettings)target).matchingPatterns;
 
@@ -71,6 +89,12 @@ public class ImageCacheSettingsEditor : UnityEditor.Editor
 
         EditorUtility.SetDirty(target);
         AssetDatabase.SaveAssets();
+        
+        //AddressablesPlayerBuildResult result;
+        AddressableAssetSettings.BuildPlayerContent(out AddressablesPlayerBuildResult result);
+        bool success = string.IsNullOrEmpty(result.Error);
+        if (!success)
+            Debug.LogError("Addressables build error encountered: " + result.Error);
     }
 
     void CacheImage(string path)
@@ -80,12 +104,15 @@ public class ImageCacheSettingsEditor : UnityEditor.Editor
         EditorUtility.SetDirty(importer);
         importer.SaveAndReimport();
 
-        var clone_path = "Assets/Resources/ImageCache/" + AssetDatabase.AssetPathToGUID(path) + ".bytes";
+        var clone_path = "Assets/ImageCache/" + AssetDatabase.AssetPathToGUID(path) + ".bytes";
         AssetDatabase.CopyAsset(path, clone_path);
+        var guid = AssetDatabase.AssetPathToGUID(clone_path);
+        var new_entry = addressable_settings.CreateOrMoveEntry(guid, addressable_group);
+
         ((ImageCacheSettings)target).mapItems.Add(new ImageCacheSettings.MapItem()
         {
             sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path),
-            binarySprite = AssetDatabase.LoadAssetAtPath<TextAsset>(clone_path)
+            binarySpriteReference = new UnityEngine.AddressableAssets.AssetReference(guid)
         });
     }
-}
+};
