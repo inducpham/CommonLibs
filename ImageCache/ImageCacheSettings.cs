@@ -32,25 +32,33 @@ public class ImageCacheSettings : ScriptableObject
     public List<string> matchingPatterns = new List<string>();
     public List<MapItem> mapItems = new List<MapItem>();
     Dictionary<Sprite, AssetReference> refMap = null;
+    Dictionary<Sprite, Sprite> refMapInstance = null;
 
     public Sprite CreateSpriteFromCache(Sprite referenceSprite)
     {
         if (refMap == null) Remap();
         if (refMap.ContainsKey(referenceSprite) == false) return referenceSprite;
+        if (refMapInstance.ContainsKey(referenceSprite)) return refMapInstance[referenceSprite];
 
         var ref_asset = refMap[referenceSprite];
-        var handle = ref_asset.LoadAssetAsync<TextAsset>();
-        var textAsset = handle.WaitForCompletion();
+        var textAsset = (TextAsset)ref_asset.Asset;
+
+        if (textAsset == null) {
+            var handle = ref_asset.LoadAssetAsync<TextAsset>();
+            textAsset = handle.WaitForCompletion();
+        }
 
         var texture = new Texture2D(1, 1);
         texture.LoadImage(textAsset.bytes);
-        return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.one / 2);
+        refMapInstance[referenceSprite] = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.one / 2);
+        return refMapInstance[referenceSprite];
     }
         
     void Remap()
     {
         refMap = new Dictionary<Sprite, AssetReference>();
         foreach (var item in mapItems) refMap[item.sprite] = item.binarySpriteReference;
+        refMapInstance = new Dictionary<Sprite, Sprite>();
         TryMapReleaseAssets();
     }
 
@@ -66,6 +74,7 @@ public class ImageCacheSettings : ScriptableObject
     {
         if (refMap == null) return;
         foreach (var ref_asset in refMap.Values) ref_asset.ReleaseAsset();
+        refMapInstance = new Dictionary<Sprite, Sprite>();
     }
 
 }
