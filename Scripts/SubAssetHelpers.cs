@@ -58,8 +58,15 @@ public class SubAssetHelpers : Editor
             {
                 var asset_path = AssetDatabase.GetAssetPath(asset);
                 var asset_name = Path.GetFileName(asset_path);
-                if (asset_name.ToLower().EndsWith(".asset"))
+                var lower_asset_name = asset_name.ToLower();
+
+                if (lower_asset_name.EndsWith(".asset"))
                     asset_name = asset_name.Substring(0, asset_name.Length - 6);
+                else if (lower_asset_name.EndsWith(".anim"))
+                    asset_name = asset_name.Substring(0, asset_name.Length - 5);
+                else if (lower_asset_name.EndsWith(".controller"))
+                    asset_name = asset_name.Substring(0, asset_name.Length - 11);
+
                 AssetDatabase.RemoveObjectFromAsset(asset);
                 AssetDatabase.AddObjectToAsset(asset, path);
                 AssetDatabase.DeleteAsset(asset_path);

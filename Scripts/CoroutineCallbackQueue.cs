@@ -7,12 +7,33 @@ class CoroutineCallbackQueue
 {
     private Queue<IEnumerator> coroutineQueue = new Queue<IEnumerator>();
 
+    public Action SetupCoroutineCallback(Func<IEnumerator> cf)
+    {
+        return () =>
+        {
+            var handle = cf();
+            QueueCoroutine(handle);
+        };
+    }
+
+    bool initCoroutine;
+    public CoroutineCallbackQueue()
+    {
+
+    }
+
+    public CoroutineCallbackQueue(bool initCoroutine = false)
+    {
+        this.initCoroutine = initCoroutine;
+    }
+
+
     public Action<T> SetupCoroutineCallback<T>(Func<T, IEnumerator> cf)
     {
         return (t) =>
         {
             var handle = cf(t);
-            coroutineQueue.Enqueue(handle);
+            QueueCoroutine(handle);
         };
     }
 
@@ -21,7 +42,7 @@ class CoroutineCallbackQueue
         return (t1, t2) =>
         {
             var handle = cf(t1, t2);
-            coroutineQueue.Enqueue(handle);
+            QueueCoroutine(handle);
         };
     }
 
@@ -30,7 +51,7 @@ class CoroutineCallbackQueue
         return (t1, t2, t3) =>
         {
             var handle = cf(t1, t2, t3);
-            coroutineQueue.Enqueue(handle);
+            QueueCoroutine(handle);
         };
     }
 
@@ -39,7 +60,7 @@ class CoroutineCallbackQueue
         return (t1, t2, t3, t4) =>
         {
             var handle = cf(t1, t2, t3, t4);
-            coroutineQueue.Enqueue(handle);
+            QueueCoroutine(handle);
         };
     }
 
@@ -48,7 +69,7 @@ class CoroutineCallbackQueue
         return (t1, t2, t3, t4, t5) =>
         {
             var handle = cf(t1, t2, t3, t4, t5);
-            coroutineQueue.Enqueue(handle);
+            QueueCoroutine(handle);
         };
     }
 
@@ -57,7 +78,7 @@ class CoroutineCallbackQueue
         return (t1, t2, t3, t4, t5, t6) =>
         {
             var handle = cf(t1, t2, t3, t4, t5, t6);
-            coroutineQueue.Enqueue(handle);
+            QueueCoroutine(handle);
         };
     }
 
@@ -66,7 +87,7 @@ class CoroutineCallbackQueue
         return (t1, t2, t3, t4, t5, t6, t7) =>
         {
             var handle = cf(t1, t2, t3, t4, t5, t6, t7);
-            coroutineQueue.Enqueue(handle);
+            QueueCoroutine(handle);
         };
     }
 
@@ -75,7 +96,7 @@ class CoroutineCallbackQueue
         return (t1, t2, t3, t4, t5, t6, t7, t8) =>
         {
             var handle = cf(t1, t2, t3, t4, t5, t6, t7, t8);
-            coroutineQueue.Enqueue(handle);
+            QueueCoroutine(handle);
         };
     }
 
@@ -84,10 +105,25 @@ class CoroutineCallbackQueue
         return (t1, t2, t3, t4, t5, t6, t7, t8, t9) =>
         {
             var handle = cf(t1, t2, t3, t4, t5, t6, t7, t8, t9);
-            coroutineQueue.Enqueue(handle);
+            QueueCoroutine(handle);
         };
     }
 
     public bool Empty => coroutineQueue.Count <= 0;
     public IEnumerator Next => coroutineQueue.Dequeue();
+
+    void QueueCoroutine(IEnumerator coroutine)
+    {
+        if (initCoroutine) coroutine.MoveNext();
+        coroutineQueue.Enqueue(coroutine);
+    }
+
+    public IEnumerator CoAutoResolve()
+    {
+        while (true)
+        {
+            while (Empty == false) yield return Next;
+            yield return true;
+        }
+    }
 }

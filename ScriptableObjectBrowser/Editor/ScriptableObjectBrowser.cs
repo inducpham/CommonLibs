@@ -92,15 +92,17 @@ namespace ScriptableObjectBrowser
 
             return false; // let unity open the file
         }
-
+        
         void SwitchToEditorType(System.Type type)
         {
             RecordCurrentSelection();
             this.currentSelectionEntry = this.startSelectionEntry = null;
             this.selections.Clear();
-            currentEditorTypeIndex = browsable_types.IndexOf(type);
 
-            if (editors.ContainsKey(type) == false) return;
+            while (type != null && editors.ContainsKey(type) == false) type = type.BaseType;
+            if (type == null) return;
+
+            currentEditorTypeIndex = browsable_types.IndexOf(type);
             this.currentEditor = editors[type];
             this.currentEditor.browser = this;
             this.currentType = type;
@@ -132,7 +134,7 @@ namespace ScriptableObjectBrowser
 
                 var loaded_assets = AssetDatabase.LoadAllAssetsAtPath(path);
                 foreach (var asset in loaded_assets)
-                    if (asset.GetType() == type) found_assets.Add(asset);
+                    if (type.IsAssignableFrom(asset.GetType())) found_assets.Add(asset);
             }
 
             foreach (var asset in found_assets)

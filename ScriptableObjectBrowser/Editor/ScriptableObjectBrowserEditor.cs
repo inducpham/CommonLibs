@@ -142,7 +142,7 @@ namespace ScriptableObjectBrowser
 
             foreach (var assetPath in assetPaths)
                 foreach (var loadedAsset in AssetDatabase.LoadAllAssetsAtPath(assetPath))
-                    if (loadedAsset.GetType() == typeof(T)) results.Add((T)loadedAsset);
+                    if (typeof(T).IsAssignableFrom(loadedAsset.GetType())) results.Add((T)loadedAsset);
 
             return results;
         }
@@ -158,7 +158,7 @@ namespace ScriptableObjectBrowser
 
             foreach (var assetPath in assetPaths)
                 foreach (var loadedAsset in AssetDatabase.LoadAllAssetsAtPath(assetPath))
-                    if (loadedAsset.GetType() == typeof(T)) results.Add((T)loadedAsset);
+                    if (typeof(T).IsAssignableFrom(loadedAsset.GetType())) results.Add((T)loadedAsset);
 
             return results;
         }
