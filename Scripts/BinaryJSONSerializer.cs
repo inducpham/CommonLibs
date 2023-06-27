@@ -90,8 +90,8 @@ public class BinaryJSONSerializer : MonoBehaviour
         for (var i = 0; i < contentbytes.Length; i++)
         {
             var b = contentbytes[i];
-            var b1 = (byte) ('a' + b / ((byte)8));
-            var b2 = (byte)('0' + b % ((byte)8));
+            var b1 = (byte) ('a' + b / ((byte)16));
+            var b2 = (byte)('0' + b % ((byte)16));
             readable_bytes[i * 2] = b1;
             readable_bytes[i * 2 + 1] = b2;
         }
@@ -108,7 +108,7 @@ public class BinaryJSONSerializer : MonoBehaviour
         {
             var b1 = (byte) (readable_bytes[i * 2] - 'a');
             var b2 = (byte) (readable_bytes[i * 2 + 1] - '0');
-            var b = (byte) (b1 * 8 + b2);
+            var b = (byte) (b1 * 16 + b2);
             bytes[i] = b;
         }
 
