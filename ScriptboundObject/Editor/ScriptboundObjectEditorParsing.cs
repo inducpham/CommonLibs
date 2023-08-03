@@ -321,7 +321,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         if (typeof(UnityEngine.Object).IsAssignableFrom(type))
         {
             if (param_str.Trim().Length == 0 || param_str.Trim().ToLower() == "none") return;
-            var val = StringToObject(param_str);
+            var val = StringToObjectWithType(param_str, type);
             if (val == null && param_str.Trim().Length > 0) throw new ParsingException("Instruction object type parse failure: " + param_str);
             return;
         }
@@ -388,7 +388,7 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
             //params_str: name(21412)
             param.type = ScriptboundObject.Instruction.ParamType.OBJECT;
             param.valueIndex = clone.scriptObjectValues.Count;
-            var val = StringToObject(param_str);
+            var val = StringToObjectWithType(param_str, type);
             clone.scriptObjectValues.Add(val);
             return;
         }

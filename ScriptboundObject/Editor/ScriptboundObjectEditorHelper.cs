@@ -225,13 +225,40 @@ public partial class ScriptboundObjectEditor : UnityEditor.Editor
         var matchPath = matches[0].Groups[1].Value;
         matchPath = AssetDatabase.GUIDToAssetPath(matchPath);
         var matchIndex = matches[0].Groups[2].Value;
-        int index = 0;
 
+        int index = 0;
         if (int.TryParse(matchIndex, out index) == false) return null;
 
         var objects = AssetDatabase.LoadAllAssetsAtPath(matchPath);
         if (index < 0 || index >= objects.Length) return null;
-        return objects[index];
+
+        var result = objects[index];
+        return result;
+    }
+
+    private UnityEngine.Object StringToObjectWithType(string str, System.Type type)
+    {
+        var matches = Regex.Matches(str, @"\(([a-zA-Z0-9]+)\+(\d+)\)");
+
+        if (matches.Count <= 0 || matches[0].Success == false) return null;
+
+        var matchPath = matches[0].Groups[1].Value;
+        matchPath = AssetDatabase.GUIDToAssetPath(matchPath);
+        var matchIndex = matches[0].Groups[2].Value;
+
+        int index = 0;
+        if (int.TryParse(matchIndex, out index) == false) return null;
+
+        var objects = AssetDatabase.LoadAllAssetsAtPath(matchPath);
+        if (index < 0 || index >= objects.Length) return null;
+
+        var result = objects[index];
+        if (result.GetType() == type) return result;
+
+        //if result type does not match, reiterate and return the correct type
+        foreach (var o in objects) if (o.GetType() == type) return o;
+
+        return null;
     }
 
     private bool EditingInjectibleString(TextEditor tEditor)
