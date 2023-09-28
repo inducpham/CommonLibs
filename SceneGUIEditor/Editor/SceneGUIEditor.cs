@@ -15,6 +15,7 @@ public class SceneGUIEditor : UnityEditor.Editor
     protected KeyCode keyPressedCode;
     private bool sceneGUIEditorEnabled = false;
     protected float handleSize;
+    public bool SceneGUIEditorEnabled => sceneGUIEditorEnabled;
 
     #region CheckRightClick
     static bool CheckContextClicked()
@@ -136,7 +137,10 @@ public class SceneGUIEditor : UnityEditor.Editor
             this.keyPressedCode = Event.current.keyCode;
 
             this.CustomSceneGUI();
+
             if (clicked) Event.current.Use();
+            if (leftReleased || rightReleased) Event.current.Use();
+
             HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
 
             if (dragging || draggingRight || leftReleased || rightReleased || keyPressed)
