@@ -26,6 +26,7 @@ public class ImageCacheSettings : ScriptableObject
     {
         public Sprite sprite;
         public AssetReference binarySpriteReference;
+        public long lastModifiedTimestamp;
     }
 
     public string addressableGroupName;
