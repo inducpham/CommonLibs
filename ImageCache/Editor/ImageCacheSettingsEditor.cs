@@ -68,12 +68,12 @@ public class ImageCacheSettingsEditor : UnityEditor.Editor
             return;
         }
 
-        var entries = new HashSet<AddressableAssetEntry>(group.entries);
-        foreach (var entry in entries) group.RemoveAssetEntry(entry);
+        //var entries = new HashSet<AddressableAssetEntry>(group.entries);
+        //foreach (var entry in entries) group.RemoveAssetEntry(entry);
         this.addressable_group = group;
 
-        AssetDatabase.DeleteAsset("Assets/ImageCache");
-        AssetDatabase.CreateFolder("Assets", "ImageCache");
+        if (AssetDatabase.IsValidFolder("Assets/ImageCache") == false)
+            AssetDatabase.CreateFolder("Assets", "ImageCache");
         var patterns = target.matchingPatterns;
 
 
