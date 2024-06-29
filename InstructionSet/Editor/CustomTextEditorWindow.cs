@@ -379,7 +379,7 @@ namespace InstructionSetEditor
 
             this.textEditor = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
             if (this.textEditor != null)
-                textEditor.multiline = true;
+                textEditor.isMultiline = true;
 
             if (this.textEditorStyle == null)
             {
