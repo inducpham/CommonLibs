@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 using System;
+using CondoEngine;
+
 #if UNITY_EDITOR
 using UnityEditor;
 
@@ -50,10 +52,13 @@ public class SubAssetHelpers : Editor
         DragAndDrop.visualMode = DragAndDropVisualMode.Move;
 
         if (Event.current.type == EventType.DragUpdated)
+        {
             DragAndDrop.AcceptDrag();
+        }
 
         if (Event.current.type == EventType.DragPerform)
         {
+            Debug.Log("Dropping subassets");
             foreach (var asset in DragAndDrop.objectReferences)
             {
                 var asset_path = AssetDatabase.GetAssetPath(asset);
@@ -69,9 +74,13 @@ public class SubAssetHelpers : Editor
 
                 AssetDatabase.RemoveObjectFromAsset(asset);
                 AssetDatabase.AddObjectToAsset(asset, path);
-                AssetDatabase.DeleteAsset(asset_path);
+
+                EditorApplication.delayCall += () =>
+                {
+                    AssetDatabase.DeleteAsset(asset_path);
+                    AssetDatabase.ImportAsset(asset_path);
+                };
                 asset.name = asset_name;
-                AssetDatabase.ImportAsset(asset_path);
             }
             AssetDatabase.ImportAsset(path);
         }
