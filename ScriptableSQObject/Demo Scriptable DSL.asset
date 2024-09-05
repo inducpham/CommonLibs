@@ -1,0 +1,87 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee751e5f30fa08b4ba91e56977bac4aa, type: 3}
+  m_Name: Demo Scriptable DSL
+  m_EditorClassIdentifier: 
+  commands:
+  - indent: 0
+    commandName: 
+    contents: Default string line here
+    objectParams: []
+    stringParams: []
+  - indent: 0
+    commandName: 
+    contents: When typing a string line, like this
+    objectParams: []
+    stringParams: []
+  - indent: 0
+    commandName: 
+    contents: SetName
+    objectParams: []
+    stringParams: []
+  - indent: 0
+    commandName: 
+    contents: Press ctrl+space to expand it into class input
+    objectParams: []
+    stringParams: []
+  - indent: 0
+    commandName: SetName
+    contents: SetName
+    objectParams:
+    - {fileID: 0}
+    stringParams:
+    - NPC name
+  - indent: 0
+    commandName: SetPortrait
+    contents: SetPortrait
+    objectParams:
+    - {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+    stringParams:
+    - 
+  - indent: 0
+    commandName: PlayMood
+    contents: PlayMood
+    objectParams:
+    - {fileID: 0}
+    stringParams:
+    - Sad
+  - indent: 0
+    commandName: 
+    contents: Class input can also have many field to allow multiple input
+    objectParams: []
+    stringParams: []
+  - indent: 0
+    commandName: ShowRect
+    contents: ShowRect
+    objectParams:
+    - {fileID: 0}
+    - {fileID: 0}
+    - {fileID: 0}
+    - {fileID: 0}
+    stringParams:
+    - 10
+    - 10
+    - 20
+    - 20
+  - indent: 0
+    commandName: ShowRect
+    contents: ShowRect
+    objectParams:
+    - {fileID: 0}
+    - {fileID: 0}
+    - {fileID: 0}
+    - {fileID: 0}
+    stringParams:
+    - 10
+    - 10
+    - 20
+    - 20
