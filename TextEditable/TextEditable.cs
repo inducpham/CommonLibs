@@ -370,7 +370,7 @@ namespace TextEditable
             EditorGUI.FocusTextInControl("te");
 
             this.textEditor = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
-            textEditor.isMultiline = true;
+            textEditor.multiline = true;
 
             this.UpdateStatus(this.statusPosition);
             #endregion

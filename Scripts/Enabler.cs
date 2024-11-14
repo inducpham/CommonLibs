@@ -11,6 +11,6 @@ public class Enabler : MonoBehaviour
     {
         if (this.targets != null)
             foreach (var target in this.targets)
-                target?.SetActive(true);
+                if (target != null) target.SetActive(true);
     }
 }
