@@ -670,6 +670,35 @@ namespace ScriptableObjectBrowser
 
         void CreateNewEntry()
         #region CreateNewEntry
+        {            
+            var types = currentType.Assembly.GetTypes().Where(t => t.IsSubclassOf(currentType)).ToList();
+            types.Insert(0, currentType);
+            types.RemoveAll((t) => t.IsAbstract);
+
+            if (types.Count == 0) return;
+
+            if (types.Count == 1)
+            {
+                CreateNewEntry(types[0]);
+                return;
+            } 
+
+            if (types.Count > 1)
+            {
+                var menu = new GenericMenu();
+                foreach (var type in types)
+                {
+                    var name = type.Name;
+                    menu.AddItem(new GUIContent(name), false, () => CreateNewEntry(type));
+                }
+                menu.ShowAsContext();
+            }
+        }
+
+        #region Create new entry subclass popup
+        #endregion
+
+        void CreateNewEntry(System.Type entryType)
         {
             var r = new Rect();
             r.position = this.position.position;
@@ -677,7 +706,7 @@ namespace ScriptableObjectBrowser
             r.x += 32;
             r.width = BROWSE_AREA_WIDTH - 34;
             r.height = 18;
-            PopupWindow.Show(r, new CreateNewEntryPopup(r, "", FinishCreateNewEntry));
+            PopupWindow.Show(r, new CreateNewEntryPopup(r, "", (name) => FinishCreateNewEntry(name, entryType)));
         }
 
         #region Create new entry popup
@@ -738,14 +767,17 @@ namespace ScriptableObjectBrowser
         }
         #endregion
 
-        void FinishCreateNewEntry(string name)
+        void FinishCreateNewEntry(string name, System.Type entryType)
         {
             var e = this.currentEditor;
-            CreateNewEntry(name);
+            CreateNewEntry(name, entryType);
         }
         
-        public UnityEngine.Object CreateNewEntry(string name)
+        public UnityEngine.Object CreateNewEntry(string name, System.Type entryType = null)
         {
+            if (entryType == null) entryType = this.currentType;
+            if (entryType != currentType && entryType.IsSubclassOf(currentType) == false) return null;
+
             var e = this.currentEditor;
             string path;
 
@@ -757,7 +789,7 @@ namespace ScriptableObjectBrowser
             else
                 path = this.currentEditor.DefaultStoragePath + "/" + name + ".asset";
 
-            ScriptableObject instance = (ScriptableObject)System.Activator.CreateInstance(this.currentType);
+            ScriptableObject instance = (ScriptableObject)System.Activator.CreateInstance(entryType);
             instance.name = name;
 
             AssetDatabase.CreateAsset(instance, path);
