@@ -103,10 +103,26 @@ public class ImageCacheSettingsEditor : UnityEditor.Editor
         EditorUtility.SetDirty(target);
         AssetDatabase.SaveAssets();
 
+
+
         AddressableAssetSettings.BuildPlayerContent(out AddressablesPlayerBuildResult result);
         bool success = string.IsNullOrEmpty(result.Error);
         if (!success)
             Debug.LogError("Addressables build error encountered: " + result.Error);
+
+        HashSet<string> existing_filename = new HashSet<string>();
+        foreach (var item in target.mapItems)
+        {
+            var sprite = item.sprite;
+            if (sprite == null) continue;
+
+            if (existing_filename.Contains(sprite.name))
+            {
+                var path = AssetDatabase.GetAssetPath(item.sprite);
+                Debug.LogError("Sprite name already exist: " + sprite.name + " in " + path);
+            } else
+                existing_filename.Add(sprite.name);
+        }
     }
 
     ImageCacheSettings.MapItem CacheImage(string path, ImageCacheSettings.MapItem map_item)

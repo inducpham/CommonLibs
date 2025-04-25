@@ -32,16 +32,16 @@ public class ImageCacheSettings : ScriptableObject
     public string addressableGroupName;
     public List<string> matchingPatterns = new List<string>();
     public List<MapItem> mapItems = new List<MapItem>();
-    Dictionary<Sprite, AssetReference> refMap = null;
-    Dictionary<Sprite, Sprite> refMapInstance = null;
+    Dictionary<string, AssetReference> refMap = null;
+    Dictionary<string, Sprite> refMapInstance = null;
 
     public Sprite CreateSpriteFromCache(Sprite referenceSprite)
     {
         if (refMap == null) Remap();
-        if (refMap.ContainsKey(referenceSprite) == false) return referenceSprite;
-        if (refMapInstance.ContainsKey(referenceSprite)) return refMapInstance[referenceSprite];
+        if (refMap.ContainsKey(referenceSprite.name) == false) return referenceSprite;
+        if (refMapInstance.ContainsKey(referenceSprite.name)) return refMapInstance[referenceSprite.name];
 
-        var ref_asset = refMap[referenceSprite];
+        var ref_asset = refMap[referenceSprite.name];
         var textAsset = (TextAsset)ref_asset.Asset;
 
         if (textAsset == null) {
@@ -51,15 +51,15 @@ public class ImageCacheSettings : ScriptableObject
 
         var texture = new Texture2D(1, 1);
         texture.LoadImage(textAsset.bytes);
-        refMapInstance[referenceSprite] = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.one / 2);
-        return refMapInstance[referenceSprite];
+        refMapInstance[referenceSprite.name] = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.one / 2);
+        return refMapInstance[referenceSprite.name];
     }
         
     void Remap()
     {
-        refMap = new Dictionary<Sprite, AssetReference>();
-        foreach (var item in mapItems) refMap[item.sprite] = item.binarySpriteReference;
-        refMapInstance = new Dictionary<Sprite, Sprite>();
+        refMap = new Dictionary<string, AssetReference>();
+        foreach (var item in mapItems) refMap[item.sprite.name] = item.binarySpriteReference;
+        refMapInstance = new Dictionary<string, Sprite>();
         TryMapReleaseAssets();
     }
 
@@ -75,7 +75,7 @@ public class ImageCacheSettings : ScriptableObject
     {
         if (refMap == null) return;
         foreach (var ref_asset in refMap.Values) ref_asset.ReleaseAsset();
-        refMapInstance = new Dictionary<Sprite, Sprite>();
+        refMapInstance = new Dictionary<string, Sprite>();
     }
 
 }
