@@ -43,10 +43,11 @@ public static class ClearCallbackOnSceneLoad
                             }
                         }
 
-                        if (delegateContainer == null) delegateContainer = del;
-                        else Delegate.Combine(delegateContainer, del);
-                    }
 
+                        if (delegateContainer == null) delegateContainer = del;
+                        else delegateContainer = Delegate.Combine(delegateContainer, del);
+                    }
+                     
                     field.SetValue(obj, delegateContainer);
                 }
 
