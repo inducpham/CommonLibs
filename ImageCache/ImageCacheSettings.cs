@@ -58,7 +58,11 @@ public class ImageCacheSettings : ScriptableObject
     void Remap()
     {
         refMap = new Dictionary<string, AssetReference>();
-        foreach (var item in mapItems) refMap[item.sprite.name] = item.binarySpriteReference;
+        foreach (var item in mapItems)
+        {
+            if (item == null || item.sprite == null) continue;
+            refMap[item.sprite.name] = item.binarySpriteReference;
+        }
         refMapInstance = new Dictionary<string, Sprite>();
         TryMapReleaseAssets();
     }
