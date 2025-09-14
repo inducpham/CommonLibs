@@ -45,4 +45,23 @@ public class FindAllAssets
 #endif
 
     }
+
+    public static List<T> Find<T>(string startingPath, Func<string, bool> filter) where T : UnityEngine.Object
+    {
+#if UNITY_EDITOR
+        List<T> results = new List<T>();
+        foreach (var uid in AssetDatabase.FindAssets("t:" + typeof(T).Name, new string[] { startingPath }))
+        {
+            var path = AssetDatabase.GUIDToAssetPath(uid);
+            foreach (var obj in AssetDatabase.LoadAllAssetsAtPath(path))
+                if (typeof(T) != null && obj != null && typeof(T).IsAssignableFrom(obj.GetType()))
+                    if (filter(path))
+                        results.Add((T)obj);
+        }
+        return results;
+#else
+        return new List<T>();
+#endif
+
+    }
 }
