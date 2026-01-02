@@ -2,20 +2,16 @@
 using UnityEditor;
 using System.Collections;
 
-[CustomEditor(typeof(ScriptableObject), true), CanEditMultipleObjects]
-public class ScriptableObjectSelect : UnityEditor.Editor
+public class ScriptableObjectSelect
 {
-    public override void OnInspectorGUI()
+
+    //hotkey Ctrl + Space
+    [MenuItem("Tools/Ping Selected Object %L")]
+    public static void PingSelectedObject()
     {
-
-        using (new EditorGUILayout.HorizontalScope())
+        if (Selection.activeObject != null)
         {
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Select", EditorStyles.miniButton, GUILayout.MaxWidth(48)))
-                EditorGUIUtility.PingObject(this.target);
+            EditorGUIUtility.PingObject(Selection.activeObject);
         }
-
-        GUILayout.Space(12);
-        base.OnInspectorGUI();
     }
 }
