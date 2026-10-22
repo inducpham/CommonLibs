@@ -78,7 +78,22 @@ public class ImageCacheSettingsEditor : UnityEditor.Editor
 
 
         List<ImageCacheSettings.MapItem> existing_items = target.mapItems ?? new List<ImageCacheSettings.MapItem>();
+
+        foreach (var item in existing_items)
+        {
+            Debug.Log(item.sprite == null);
+            if (item.sprite != null) continue;
+            if (item.binarySpriteReference == null) continue;
+
+            //Destroy binary sprite reference
+            var path = AssetDatabase.GUIDToAssetPath(item.binarySpriteReference.AssetGUID);
+            if (string.IsNullOrWhiteSpace(path)) continue;
+            AssetDatabase.DeleteAsset(path);
+            Debug.Log("Deleted unused assets: " + path);
+        }
+
         existing_items.RemoveAll(i => i == null || i.sprite == null || i.binarySpriteReference == null);
+        AssetDatabase.SaveAssets();
 
         var map_items = existing_items.ToDictionary(item =>
         {
@@ -93,6 +108,13 @@ public class ImageCacheSettingsEditor : UnityEditor.Editor
                 {
                     var guid = AssetDatabase.AssetPathToGUID(path);
                     map_items.TryGetValue(guid, out var map_item);
+
+                    var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                    if (sprite == null)
+                    {
+                        Debug.Log("Sprite not found at path: " + path);
+                        continue;
+                    }
                     map_items[guid] = CacheImage(path, map_item);
                     break;
                 }
@@ -102,6 +124,7 @@ public class ImageCacheSettingsEditor : UnityEditor.Editor
         target.mapItems = map_items.Values.ToList();
         EditorUtility.SetDirty(target);
         AssetDatabase.SaveAssets();
+
 
 
 
