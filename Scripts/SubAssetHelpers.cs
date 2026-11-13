@@ -57,6 +57,7 @@ public class SubAssetHelpers : Editor
 
         if (Event.current.type == EventType.DragPerform)
         {
+            Event.current.Use();
             Debug.Log("Dropping subassets");
             foreach (var asset in DragAndDrop.objectReferences)
             {
@@ -74,11 +75,13 @@ public class SubAssetHelpers : Editor
                 AssetDatabase.RemoveObjectFromAsset(asset);
                 AssetDatabase.AddObjectToAsset(asset, path);
 
-                EditorApplication.delayCall += () =>
-                {
-                    AssetDatabase.DeleteAsset(asset_path);
-                    AssetDatabase.ImportAsset(asset_path);
-                };
+                AssetDatabase.DeleteAsset(asset_path);
+                AssetDatabase.ImportAsset(asset_path);
+                //EditorApplication.delayCall += () =>
+                //{
+                //    AssetDatabase.DeleteAsset(asset_path);
+                //    AssetDatabase.ImportAsset(asset_path);
+                //};
                 asset.name = asset_name;
             }
             AssetDatabase.ImportAsset(path);
